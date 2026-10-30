@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="en-NZ">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Signal Collider | Futures PlayLab</title>
+  <meta name="description" content="Draw random mixes of signals, settings, people and objects, then imagine everyday life in the future.">
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/css/playlab.css">
+  <script>try{var t=localStorage.getItem("playlab:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+  <style>
+    /* Each deck gets its own edge colour, drawn from the shared palette */
+    .sc-card[data-deck="horizon"]  { --deck: var(--ink); }
+    .sc-card[data-deck="setting"]  { --deck: var(--design); }
+    .sc-card[data-deck="person"]   { --deck: var(--literacy); }
+    .sc-card[data-deck="artefact"] { --deck: var(--danger); }
+    .sc-card[data-deck="signal"]   { --deck: var(--futures); }
+
+    .sc-table h2, .sc-write h2, .sc-collection h2 { font-size: var(--step-2); }
+    .sc-table__head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+    .sc-table__head h2 { margin: 0; }
+    .sc-table__buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+    .sc-timer { font-family: var(--font-display); font-weight: 700; font-variant-numeric: tabular-nums; min-width: 3.5rem; text-align: right; }
+
+    .sc-cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.75rem; }
+    @media (max-width: 980px) { .sc-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (max-width: 620px) { .sc-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    .sc-card {
+      display: flex; flex-direction: column; gap: 0.5rem;
+      min-height: 13rem; padding: 0.9rem 0.9rem 0.8rem;
+      background: var(--surface); border: 1.5px solid var(--line); border-top: 8px solid var(--deck);
+      border-radius: var(--radius-md);
+    }
+    .sc-card.is-kept { border-color: var(--deck); box-shadow: inset 0 0 0 1.5px var(--deck); }
+    .sc-card__deck { font-size: var(--step--1); font-weight: 700; color: var(--ink-soft); margin: 0; }
+    .sc-card__value {
+      font-family: var(--font-display); font-weight: 700; font-size: 1.3rem; line-height: 1.15;
+      letter-spacing: -0.01em; margin: 0; flex: 1; overflow-wrap: anywhere;
+    }
+    .sc-card__value::first-letter { text-transform: uppercase; }
+    @media (max-width: 620px) { .sc-card__value { font-size: 1.15rem; } }
+    .sc-card__sub { margin: -0.3rem 0 0; color: var(--ink-soft); font-size: var(--step--1); }
+    .sc-card__buttons { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .sc-card__buttons .btn { min-height: 34px; padding: 0.2rem 0.75rem; font-size: 0.85rem; }
+    .sc-card [aria-pressed="true"] { background: var(--deck); border-color: var(--deck); color: var(--surface); }
+    .sc-card.is-new .sc-card__value { animation: sc-in 380ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+    @keyframes sc-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+    .sc-prompt {
+      margin: 1.25rem 0 0; padding: 1.1rem 1.25rem;
+      background: var(--accent-tint); border-radius: var(--radius-md);
+      font-family: var(--font-display); font-size: var(--step-1); font-weight: 600; line-height: 1.35;
+    }
+    .sc-prompt span { color: var(--ink-soft); display: block; font-family: var(--font-body); font-weight: 400; font-size: var(--step-0); margin-top: 0.35rem; }
+
+    .sc-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; margin-top: 1rem; align-items: start; }
+    @media (max-width: 860px) { .sc-columns { grid-template-columns: minmax(0, 1fr); } }
+    .sc-write .field + .field { margin-top: 1rem; }
+    .sc-write textarea { min-height: 8rem; }
+    .sc-write__nudges { margin: 0.5rem 0 0; padding-left: 1.2rem; color: var(--ink-soft); font-size: var(--step--1); }
+    .sc-write__actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+
+    .sc-ideas { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; }
+    .sc-idea { padding: 0.9rem 1rem; border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--radius-md); background: var(--bg); }
+    .sc-idea h3 { margin: 0 0 0.25rem; }
+    .sc-idea__mix { margin: 0 0 0.5rem; font-size: var(--step--1); color: var(--ink-soft); }
+    .sc-idea__desc { margin: 0; white-space: pre-wrap; }
+    .sc-idea__buttons { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.6rem; }
+
+    .sc-own { margin-top: 1rem; }
+    .sc-own summary { cursor: pointer; font-weight: 700; padding: 0.35rem 0; }
+    .sc-own__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-top: 0.75rem; }
+    @media (max-width: 700px) { .sc-own__grid { grid-template-columns: minmax(0, 1fr); } }
+    .sc-chips { list-style: none; margin: 0.6rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .sc-chips li { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.15rem 0.2rem 0.15rem 0.7rem; border-radius: 999px; background: var(--surface-2); font-size: var(--step--1); }
+    .sc-chips button { font: inherit; border: 0; background: none; color: var(--ink-soft); cursor: pointer; width: 28px; height: 28px; border-radius: 999px; }
+    .sc-chips button:hover { background: var(--line); color: var(--ink); }
+
+    @media print {
+      .sc-table, .sc-write, .sc-own { display: none; }
+      .sc-columns { display: block; }
+      .sc-idea { break-inside: avoid; }
+    }
+  </style>
+</head>
+
+<body class="cat-futures" data-tool="signal-collider">
+
+<main id="main" class="page tool-page">
+
+  <header class="tool-intro">
+    <p class="tool-intro__cat"><a href="../../#futures" data-pl-category-link data-pl="category">Futures thinking</a></p>
+    <h1 data-pl="name">Signal Collider</h1>
+    <p class="lede" data-pl="description">Draw random mixes of signals, settings, people and objects, then imagine everyday life in the future.</p>
+    <dl class="tool-intro__meta">
+      <div><dt>Time</dt><dd data-pl="minutes">10 minutes</dd></div>
+      <div><dt>You leave with</dt><dd data-pl="output">A collection of future artefacts</dd></div>
+    </dl>
+  </header>
+
+  <section class="tool-steps" aria-labelledby="how-title">
+    <h2 id="how-title">How it works</h2>
+    <ol>
+      <li>Draw a set of cards. Together they describe a moment in the future.</li>
+      <li>Imagine the object the cards describe. Give it a name and describe it in a few sentences. Go with your first idea.</li>
+      <li>Save it, keep any cards you like, and swap the rest to try another mix.</li>
+      <li>Aim for three ideas or more, then reflect on what they reveal.</li>
+    </ol>
+  </section>
+
+  <section class="panel sc-table" aria-labelledby="cards-title">
+    <div class="sc-table__head">
+      <h2 id="cards-title">Your cards</h2>
+      <div class="sc-table__buttons">
+        <span class="sc-timer" id="timer" aria-live="polite" hidden></span>
+        <button class="btn btn--small" type="button" id="timer-btn">Start a 3-minute round</button>
+        <button class="btn btn--primary" type="button" id="draw-btn">Draw new cards</button>
+      </div>
+    </div>
+    <ul class="sc-cards" id="cards" aria-label="Cards"></ul>
+    <p class="sc-prompt" id="prompt" aria-live="polite"></p>
+
+    <details class="sc-own">
+      <summary>Add your own cards</summary>
+      <p class="hint">Bring your own context. Your cards join the decks and can be drawn like any other.</p>
+      <div class="sc-own__grid">
+        <form data-own="signal">
+          <label for="own-signal">A signal you’ve noticed</label>
+          <div class="inline-form__row">
+            <input id="own-signal" type="text" maxlength="70" autocomplete="off" placeholder="For example, AI note-takers in every meeting">
+            <button class="btn" type="submit">Add signal</button>
+          </div>
+          <ul class="sc-chips" data-chips="signal" aria-label="Your signals"></ul>
+        </form>
+        <form data-own="setting">
+          <label for="own-setting">A setting from your world</label>
+          <div class="inline-form__row">
+            <input id="own-setting" type="text" maxlength="70" autocomplete="off" placeholder="For example, at our head office">
+            <button class="btn" type="submit">Add setting</button>
+          </div>
+          <p class="hint">Start with in, at or on so the sentence reads well.</p>
+          <ul class="sc-chips" data-chips="setting" aria-label="Your settings"></ul>
+        </form>
+      </div>
+    </details>
+  </section>
+
+  <div class="sc-columns">
+    <section class="panel sc-write" aria-labelledby="write-title">
+      <h2 id="write-title">Imagine it</h2>
+      <form id="idea-form">
+        <div class="field">
+          <label for="idea-name">Name it</label>
+          <input id="idea-name" type="text" maxlength="80" autocomplete="off" placeholder="For example, the Night Shift Pass">
+        </div>
+        <div class="field">
+          <label for="idea-desc">Describe it</label>
+          <textarea id="idea-desc" maxlength="800" aria-describedby="idea-nudges"></textarea>
+          <ul class="sc-write__nudges" id="idea-nudges">
+            <li>What is it, and how does it work?</li>
+            <li>Who made it, and who is it for?</li>
+            <li>What does it tell us about this future? Is that future better or worse, and for whom?</li>
+          </ul>
+        </div>
+        <div class="sc-write__actions">
+          <button class="btn btn--primary" type="submit">Save idea</button>
+          <button class="btn btn--quiet" type="button" id="clear-draft">Clear</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel sc-collection" id="workspace" aria-labelledby="collection-title">
+      <h2 id="collection-title">Your collection</h2>
+      <ul class="sc-ideas" id="ideas"></ul>
+      <p class="empty" id="ideas-empty">Ideas you save will collect here.</p>
+    </section>
+  </div>
+
+  <section class="tool-actions" aria-label="Save and export">
+    <p class="tool-actions__note">Your work saves automatically in this browser.</p>
+    <div class="tool-actions__buttons">
+      <button class="btn btn--small" type="button" data-action="image">Download image</button>
+      <button class="btn btn--small" type="button" data-action="summary">Download summary</button>
+      <button class="btn btn--small" type="button" data-action="save">Save a copy</button>
+      <button class="btn btn--small" type="button" data-action="open">Open a copy</button>
+      <button class="btn btn--small" type="button" data-action="print">Print or save as PDF</button>
+      <button class="btn btn--small btn--danger" type="button" data-action="reset">Start over</button>
+    </div>
+  </section>
+
+  <section class="reflect" aria-labelledby="reflect-title">
+    <h2 id="reflect-title">Reflect</h2>
+    <p>Jot down a few thoughts. These save with the rest of your work.</p>
+    <ol>
+      <li>
+        <label for="r1">Which idea was the most uncomfortable or surprising to imagine, and why?</label>
+        <textarea id="r1" data-reflect="surprise"></textarea>
+      </li>
+      <li>
+        <label for="r2">Are there early signs of any of your ideas today? Where have you seen hints of them?</label>
+        <textarea id="r2" data-reflect="signs"></textarea>
+      </li>
+      <li>
+        <label for="r3">How might one of these futures show up in your own organisation or sector?</label>
+        <textarea id="r3" data-reflect="context"></textarea>
+      </li>
+    </ol>
+  </section>
+
+</main>
+
+<script src="../../assets/js/tools.js"></script>
+<script src="../../assets/js/playlab.js"></script>
+
+<script>
+(function () {
+  "use strict";
+
+  var TOOL_ID = "signal-collider";
+  var THIS_YEAR = new Date().getFullYear();
+
+  /* ==================================================================
+     The decks
+     ================================================================== */
+  var DECKS = {
+    horizon: {
+      name: "When", items: [2030, 2035, 2040, 2050, 2075].filter(function (y) { return y > THIS_YEAR; }).map(String)
+    },
+    setting: {
+      name: "Where", items: [
+        "In a regional hospital", "At a marae", "In a primary school", "On a dairy farm", "At the city council",
+        "In a supermarket", "At a rugby club", "In a law firm", "In a public library", "On a construction site",
+        "In a retirement village", "At a fishing port", "In a corner dairy", "In a university lecture theatre",
+        "On a film set", "In a courtroom", "In a call centre", "At a kapa haka festival", "On a ski field",
+        "In a bank branch", "On an inter-island ferry", "At a community garden"
+      ]
+    },
+    person: {
+      name: "Who", items: [
+        "a nurse on night shift", "a retired farmer", "a 14-year-old gamer", "a recent migrant",
+        "a small-business owner", "a kaumātua", "a single parent", "a delivery driver", "a company CEO",
+        "a first-year teacher", "a disabled activist", "a city councillor", "a tourist", "a teenage climate activist",
+        "a security guard", "a grandparent raising grandchildren", "an apprentice builder", "a data scientist",
+        "a union organiser", "a hospice volunteer"
+      ]
+    },
+    artefact: {
+      name: "What", items: [
+        "a new law", "an app", "a protest sign", "a job advert", "a children’s toy", "a news headline",
+        "a public health campaign", "a piece of clothing", "a menu", "a greeting card", "a warning label",
+        "a subscription service", "a school subject", "a new sport", "a ritual or ceremony", "a museum exhibit",
+        "an insurance policy", "a public holiday", "a street sign", "a wearable device", "a cookbook",
+        "a union demand", "a dating profile", "a terms-of-service agreement"
+      ]
+    },
+    signal: {
+      name: "Shaped by", items: [
+        "AI agents that act on your behalf", "lab-grown meat", "four-day working weeks", "rising sea levels",
+        "brain–computer interfaces", "an ageing population", "drone deliveries", "deepfake video",
+        "personal carbon budgets", "quantum computing", "remote work becoming normal", "home batteries and local energy trading",
+        "mātauranga Māori shaping science", "AI tutors for every learner", "vertical farming", "rewilding",
+        "digital IDs for everyone", "humanoid robots", "climate migration", "a universal basic income",
+        "synthetic biology", "the right to repair", "a loneliness epidemic", "pay-per-use everything"
+      ]
+    }
+  };
+  var ORDER = ["horizon", "setting", "person", "artefact", "signal"];
+
+  var EMPTY = { cards: null, locks: {}, draft: { name: "", desc: "" }, ideas: [], custom: { signal: [], setting: [] }, reflect: {} };
+  function fresh() { return JSON.parse(JSON.stringify(EMPTY)); }
+  var store = PlayLab.store(TOOL_ID);
+  var state = Object.assign(fresh(), store.get("state", {}) || {});
+  function save() { store.set("state", state); }
+
+  var esc = PlayLab.escape;
+  var $ = function (id) { return document.getElementById(id); };
+
+  /* ==================================================================
+     Drawing cards
+     ================================================================== */
+  function deckItems(deck) {
+    var own = state.custom[deck] || [];
+    return DECKS[deck].items.concat(own);
+  }
+  function pick(deck, avoid) {
+    var items = deckItems(deck).filter(function (x) { return x !== avoid; });
+    if (!items.length) items = deckItems(deck);
+    return items[Math.floor(Math.random() * items.length)];
+  }
+  function draw(only) {
+    if (!state.cards) state.cards = {};
+    ORDER.forEach(function (d) {
+      if (only && only !== d) return;
+      if (!only && state.locks[d] && state.cards[d]) return;
+      state.cards[d] = pick(d, state.cards[d]);
+    });
+    save();
+    renderCards(only || "all");
+  }
+
+  function yearsAway(y) {
+    var n = Number(y) - THIS_YEAR;
+    return isNaN(n) ? "" : n === 1 ? "1 year from now" : n + " years from now";
+  }
+
+  function renderCards(changed) {
+    $("cards").innerHTML = ORDER.map(function (d) {
+      var kept = !!state.locks[d];
+      var isNew = changed === "all" ? !kept : changed === d;
+      var v = state.cards[d];
+      return '<li class="sc-card' + (kept ? " is-kept" : "") + (isNew ? " is-new" : "") + '" data-deck="' + d + '">' +
+        '<p class="sc-card__deck">' + esc(DECKS[d].name) + "</p>" +
+        '<p class="sc-card__value">' + esc(v) + "</p>" +
+        (d === "horizon" ? '<p class="sc-card__sub">' + esc(yearsAway(v)) + "</p>" : "") +
+        '<div class="sc-card__buttons">' +
+          '<button class="btn" type="button" data-keep="' + d + '" aria-pressed="' + kept + '" aria-label="Keep the ' + esc(DECKS[d].name.toLowerCase()) + ' card">' + (kept ? "Kept" : "Keep") + "</button>" +
+          '<button class="btn" type="button" data-swap="' + d + '" aria-label="Swap the ' + esc(DECKS[d].name.toLowerCase()) + ' card">Swap</button>' +
+        "</div></li>";
+    }).join("");
+    renderPrompt();
+  }
+
+  function sentence(c) {
+    return "It’s " + c.horizon + ". " + c.setting.charAt(0).toUpperCase() + c.setting.slice(1) + ", " +
+      c.person + " comes across " + c.artefact + " shaped by " + c.signal + ".";
+  }
+  function renderPrompt() {
+    $("prompt").innerHTML = esc(sentence(state.cards)) + "<span>What is it? Describe it as if it already exists.</span>";
+  }
+
+  $("draw-btn").addEventListener("click", function () { draw(); });
+  $("cards").addEventListener("click", function (e) {
+    var keep = e.target.closest("[data-keep]"), swap = e.target.closest("[data-swap]");
+    if (keep) {
+      var d = keep.dataset.keep;
+      state.locks[d] = !state.locks[d];
+      save(); renderCards(null);
+      $("cards").querySelector('[data-keep="' + d + '"]').focus();
+    }
+    if (swap) {
+      var s = swap.dataset.swap;
+      if (state.locks[s]) { state.locks[s] = false; }
+      draw(s);
+      $("cards").querySelector('[data-swap="' + s + '"]').focus();
+    }
+  });
+
+  /* ==================================================================
+     Your own cards
+     ================================================================== */
+  function renderOwn() {
+    ["signal", "setting"].forEach(function (d) {
+      var list = state.custom[d] || [];
+      document.querySelector('[data-chips="' + d + '"]').innerHTML = list.map(function (x, i) {
+        return "<li>" + esc(x) + '<button type="button" data-remove-own="' + d + '" data-i="' + i + '" aria-label="Remove ' + esc(x) + '">×</button></li>';
+      }).join("");
+    });
+  }
+  document.querySelectorAll("[data-own]").forEach(function (form) {
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var d = form.dataset.own, input = form.querySelector("input");
+      var v = input.value.trim();
+      if (!v) { PlayLab.toast("Type a " + d + " first"); input.focus(); return; }
+      // Lower-case the first letter so it reads mid-sentence, but leave acronyms like "AI" alone
+      var soften = function (x) { return /^[A-Z][a-z]/.test(x) ? x.charAt(0).toLowerCase() + x.slice(1) : x; };
+      if (d === "signal") v = soften(v);
+      if (d === "setting" && !/^(in|at|on|inside|outside|near|under|beside)\b/i.test(v)) v = "In " + soften(v);
+      state.custom[d] = (state.custom[d] || []).concat(v);
+      input.value = "";
+      // Put the new card straight on the table so it gets used
+      state.cards[d] = v;
+      save(); renderOwn(); renderCards(d);
+      PlayLab.toast("Added to the " + DECKS[d].name.toLowerCase() + " deck and drawn");
+    });
+  });
+  document.querySelector(".sc-own").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-remove-own]");
+    if (!b) return;
+    state.custom[b.dataset.removeOwn].splice(Number(b.dataset.i), 1);
+    save(); renderOwn();
+  });
+
+  /* ==================================================================
+     Writing and collecting ideas
+     ================================================================== */
+  var nameIn = $("idea-name"), descIn = $("idea-desc");
+  function saveDraft() { state.draft = { name: nameIn.value, desc: descIn.value }; save(); }
+  nameIn.addEventListener("input", saveDraft);
+  descIn.addEventListener("input", saveDraft);
+
+  $("idea-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var name = nameIn.value.trim(), desc = descIn.value.trim();
+    if (!name && !desc) { PlayLab.toast("Give your idea a name or a description first"); nameIn.focus(); return; }
+    state.ideas.unshift({
+      id: "i" + Date.now().toString(36),
+      cards: JSON.parse(JSON.stringify(state.cards)),
+      name: name || "Untitled idea",
+      desc: desc
+    });
+    state.draft = { name: "", desc: "" };
+    nameIn.value = ""; descIn.value = "";
+    save(); renderIdeas();
+    PlayLab.toast(state.ideas.length === 1 ? "Saved. Swap a card or two and try another" : "Saved. That’s " + state.ideas.length + " ideas");
+    $("draw-btn").focus();
+  });
+  $("clear-draft").addEventListener("click", function () {
+    nameIn.value = ""; descIn.value = ""; saveDraft(); nameIn.focus();
+  });
+
+  function renderIdeas() {
+    $("ideas").innerHTML = state.ideas.map(function (idea) {
+      return '<li class="sc-idea" data-id="' + idea.id + '">' +
+        "<h3>" + esc(idea.name) + "</h3>" +
+        '<p class="sc-idea__mix">' + esc(sentence(idea.cards)) + "</p>" +
+        (idea.desc ? '<p class="sc-idea__desc">' + esc(idea.desc) + "</p>" : "") +
+        '<div class="sc-idea__buttons no-print">' +
+          '<button class="btn btn--small" type="button" data-reuse="' + idea.id + '">Use these cards again</button>' +
+          '<button class="btn btn--small btn--quiet" type="button" data-remove="' + idea.id + '" aria-label="Remove ' + esc(idea.name) + '">Remove</button>' +
+        "</div></li>";
+    }).join("");
+    $("ideas-empty").hidden = state.ideas.length > 0;
+  }
+  $("ideas").addEventListener("click", function (e) {
+    var reuse = e.target.closest("[data-reuse]"), rm = e.target.closest("[data-remove]");
+    if (reuse) {
+      var idea = state.ideas.find(function (x) { return x.id === reuse.dataset.reuse; });
+      state.cards = JSON.parse(JSON.stringify(idea.cards));
+      save(); renderCards("all");
+      $("cards-title").scrollIntoView({ block: "start" });
+      PlayLab.toast("Cards are back on the table");
+    }
+    if (rm) {
+      if (!confirm("Remove this idea from your collection?")) return;
+      state.ideas = state.ideas.filter(function (x) { return x.id !== rm.dataset.remove; });
+      save(); renderIdeas();
+      PlayLab.toast("Removed");
+    }
+  });
+
+  /* ==================================================================
+     Optional timer for workshops
+     ================================================================== */
+  var timerBtn = $("timer-btn"), timerEl = $("timer"), timerId = null, endAt = 0, lastAnnounced = null;
+  function fmt(s) { return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
+  function stopTimer(done) {
+    clearInterval(timerId); timerId = null;
+    timerBtn.textContent = "Start a 3-minute round";
+    timerEl.hidden = !done;
+    if (done) { timerEl.textContent = "Time’s up"; PlayLab.toast("Time’s up. Save your idea and draw again"); }
+  }
+  timerBtn.addEventListener("click", function () {
+    if (timerId) { stopTimer(false); return; }
+    endAt = Date.now() + 180000;
+    timerEl.hidden = false; timerBtn.textContent = "Stop timer";
+    timerEl.setAttribute("aria-live", "off");
+    var tickTimer = function () {
+      var left = Math.max(0, Math.round((endAt - Date.now()) / 1000));
+      timerEl.textContent = fmt(left);
+      // Announce each whole minute for screen readers, not every second
+      if (left % 60 === 0 && left !== lastAnnounced) { lastAnnounced = left; timerEl.setAttribute("aria-label", fmt(left) + " left"); }
+      if (left === 0) stopTimer(true);
+    };
+    tickTimer();
+    timerId = setInterval(tickTimer, 1000);
+  });
+
+  /* ---------- Reflections ---------- */
+  var reflectFields = document.querySelectorAll("[data-reflect]");
+  function renderReflect() { reflectFields.forEach(function (f) { f.value = state.reflect[f.dataset.reflect] || ""; }); }
+  reflectFields.forEach(function (f) {
+    f.addEventListener("input", function () { state.reflect[f.dataset.reflect] = f.value; save(); });
+  });
+
+  /* ==================================================================
+     Save and export
+     ================================================================== */
+  function summary() {
+    var lines = [
+      "# Signal Collider",
+      "",
+      "Futures PlayLab, academyEX. Created " + new Date().toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }) + ".",
+      "",
+      "## Your collection (" + state.ideas.length + ")",
+      ""
+    ];
+    if (!state.ideas.length) lines.push("_No ideas saved yet._", "");
+    state.ideas.slice().reverse().forEach(function (idea) {
+      lines.push("### " + idea.name, "", "_" + sentence(idea.cards) + "_", "", idea.desc || "", "");
+    });
+    if ((state.custom.signal || []).length || (state.custom.setting || []).length) {
+      lines.push("## Your own cards", "");
+      (state.custom.signal || []).forEach(function (x) { lines.push("- Signal: " + x); });
+      (state.custom.setting || []).forEach(function (x) { lines.push("- Setting: " + x); });
+      lines.push("");
+    }
+    lines.push("## Reflections", "");
+    document.querySelectorAll(".reflect label").forEach(function (lab) {
+      var key = $(lab.htmlFor).dataset.reflect;
+      lines.push("**" + lab.textContent + "**", "", (state.reflect[key] || "").trim() || "_No answer yet._", "");
+    });
+    return lines.join("\n");
+  }
+
+  var actions = {
+    image: function () {
+      if (!state.ideas.length) { PlayLab.toast("Save an idea first, then download your collection"); return; }
+      PlayLab.export.elementToPNG($("workspace"), PlayLab.export.filename(TOOL_ID, "png"))
+        .then(function () { PlayLab.toast("Image downloaded"); })
+        .catch(function (err) { PlayLab.toast(err.message); });
+    },
+    summary: function () {
+      PlayLab.export.markdown(PlayLab.export.filename(TOOL_ID + "-summary", "md"), summary());
+      PlayLab.toast("Summary downloaded");
+    },
+    save: function () {
+      PlayLab.export.saveFile(TOOL_ID, state);
+      PlayLab.toast("Copy saved to your downloads");
+    },
+    open: function () {
+      PlayLab.export.openSaveFile(TOOL_ID).then(function (data) {
+        state = Object.assign(fresh(), data);
+        if (!state.cards) draw(); else save();
+        renderAll();
+        PlayLab.toast("Copy opened");
+      }).catch(function (err) {
+        if (err.message !== "cancelled") PlayLab.toast(err.message);
+      });
+    },
+    print: function () { PlayLab.export.print(); },
+    reset: function () {
+      if (!confirm("Start over? This clears your cards, ideas, own cards and reflections from this browser. Save a copy first if you want to keep them.")) return;
+      store.clear();
+      state = fresh();
+      draw();
+      renderAll();
+      PlayLab.toast("Cleared. Fresh cards are on the table");
+    }
+  };
+  document.querySelectorAll("[data-action]").forEach(function (btn) {
+    btn.addEventListener("click", function () { actions[btn.dataset.action](); });
+  });
+
+  /* ==================================================================
+     Start
+     ================================================================== */
+  function renderAll() {
+    renderCards(null);
+    renderOwn();
+    renderIdeas();
+    renderReflect();
+    nameIn.value = state.draft.name || "";
+    descIn.value = state.draft.desc || "";
+  }
+  if (!state.cards) draw();
+  renderAll();
+})();
+</script>
+</body>
+</html>

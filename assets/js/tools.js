@@ -62,10 +62,10 @@ window.PLAYLAB_TOOLS = {
       category: "futures",
       name: "Signal Collider",
       path: "futures/signal-collider/",
-      description: "Draw random mixes of signals, settings and timeframes to spark what-if ideas.",
-      minutes: 5,
-      output: "A set of provocations",
-      status: "planned"
+      description: "Draw random mixes of signals, settings, people and objects, then imagine everyday life in the future.",
+      minutes: 10,
+      output: "A collection of future artefacts",
+      status: "live"
     },
     {
       id: "three-horizons",
