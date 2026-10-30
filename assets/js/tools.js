@@ -159,7 +159,7 @@ window.PLAYLAB_TOOLS = {
       description: "Teach a tiny model from lopsided examples and see where it goes wrong.",
       minutes: 15,
       output: "A worked example of data bias",
-      status: "planned"
+      status: "live"
     },
     {
       id: "ai-critique",
@@ -169,7 +169,7 @@ window.PLAYLAB_TOOLS = {
       description: "Compare AI and human work side by side using a practical checklist.",
       minutes: 15,
       output: "A critique checklist you can reuse",
-      status: "planned"
+      status: "live"
     },
     {
       id: "data-sovereignty",

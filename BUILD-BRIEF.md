@@ -100,7 +100,11 @@ Store each tool's data as one `state` object, so saving, opening a copy and star
 | 4A | Signal Collider, How Might We Reframer, Futures Cone Sorter | Done |
 | 4B | Assumption Mapper, Three Horizons Mapper, Backcasting Timeline, Pre-mortem | Done |
 | 4C | Feed Algorithm Sandbox, Stakeholder Ecosystem Map | Done |
-| 4D | Train a Biased Classifier, AI Output Critique Lab, Data Sovereignty Explorer (content prepared first; the Data Sovereignty Explorer developed with Māori advisors) | Next (content first) |
+| 4D | Train a Biased Classifier (done), AI Output Critique Lab (done, with sample pairs to replace), Data Sovereignty Explorer (waiting on content developed with Māori advisors) | In progress |
 | 5 | Polish: accessibility check, facilitator notes, consistency pass | |
 
 Update this table as tools go live.
+
+## Content to replace
+
+- **AI Output Critique Lab:** the three example pairs are samples written for demonstration. Replace them with real AI outputs and real human work in the `PAIRS` block at the top of the script in `literacy/ai-critique/index.html`, and set `sample: false` on each real pair. The comments there explain every field.

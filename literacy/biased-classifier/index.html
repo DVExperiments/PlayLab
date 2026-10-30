@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en-NZ">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Train a Biased Classifier | Futures PlayLab</title>
+  <meta name="description" content="Teach a tiny model from lopsided examples and see where it goes wrong.">
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/css/playlab.css">
+  <script>try{var t=localStorage.getItem("playlab:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+  <style>
+    body { --apple-red: #C0392B; --apple-yellow: #D9A400; --apple-green: #5E9E3A; --ripe-zone: #DDF2EF; --unripe-zone: #F1E6E4; }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) body { --ripe-zone: #173A3F; --unripe-zone: #3A2A2C; } }
+    :root[data-theme="dark"] body { --ripe-zone: #173A3F; --unripe-zone: #3A2A2C; }
+
+    .bc-brief { margin-bottom: 1rem; }
+    .bc-brief p:last-child { margin-bottom: 0; }
+    .bc-layout { display: grid; grid-template-columns: minmax(0, 22rem) minmax(0, 1fr); gap: 1rem; align-items: start; }
+    .bc-controls { position: sticky; top: 5.5rem; }
+    @media (max-width: 920px) { .bc-layout { grid-template-columns: minmax(0, 1fr); } .bc-controls { position: static; } }
+    .bc-controls h2, .bc-results h2, .bc-brief h2, .bc-history h2, .bc-real h2 { font-size: var(--step-2); }
+    .bc-controls h3 { font-size: var(--step-0); font-family: var(--font-body); margin: 1.25rem 0 0.4rem; }
+
+    .bc-crate { margin-top: 0.75rem; }
+    .bc-crate__top { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+    .bc-crate label { margin: 0; display: inline-flex; align-items: center; gap: 0.45rem; }
+    .bc-swatch { width: 0.95rem; height: 0.95rem; border-radius: 999px; display: inline-block; }
+    .bc-crate output { font-family: var(--font-display); font-weight: 700; font-variant-numeric: tabular-nums; }
+    .bc-crate input[type="range"] { width: 100%; accent-color: var(--accent); min-height: 30px; }
+    .bc-crate p { margin: 0; font-size: var(--step--1); color: var(--ink-soft); }
+    .bc-feature { display: flex; gap: 0.55rem; align-items: flex-start; font-weight: 400; margin: 0.4rem 0 0; cursor: pointer; }
+    .bc-feature input { width: 1.15rem; height: 1.15rem; margin-top: 0.2rem; accent-color: var(--accent); flex: none; }
+    .bc-train { width: 100%; margin-top: 1.25rem; }
+    .bc-stale { margin: 0.5rem 0 0; font-size: var(--step--1); color: var(--danger); font-weight: 700; }
+
+    .bc-svg { display: block; width: 100%; height: auto; }
+    .bc-svg text { font-family: var(--font-body); font-size: 13px; fill: var(--ink-soft); }
+    .bc-cell-ripe { fill: var(--ripe-zone); }
+    .bc-cell-unripe { fill: var(--unripe-zone); }
+    .bc-axis { stroke: var(--ink-soft); stroke-width: 1.5; }
+    .bc-pt { stroke: var(--surface); stroke-width: 1.5; }
+    .bc-pt.unripe { stroke: var(--ink); stroke-width: 1.5; fill-opacity: 0.55; }
+    .bc-wrong { fill: none; stroke: var(--ink); stroke-width: 2.5; }
+    .bc-legend { display: flex; flex-wrap: wrap; gap: 0.35rem 1rem; margin: 0.6rem 0 0; font-size: var(--step--1); }
+    .bc-legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+    .bc-legend i { display: inline-block; width: 0.9rem; height: 0.9rem; border-radius: 3px; border: 1px solid var(--line); }
+    .bc-toggle-test { display: flex; gap: 0.5rem; align-items: center; font-weight: 400; margin: 0.75rem 0 0; cursor: pointer; }
+    .bc-toggle-test input { width: 1.1rem; height: 1.1rem; accent-color: var(--accent); }
+
+    .bc-score { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem 1rem; margin: 1rem 0 0; }
+    .bc-score strong { font-family: var(--font-display); font-size: var(--step-4); line-height: 1; }
+    .bc-bars { list-style: none; margin: 0.75rem 0 0; padding: 0; display: grid; gap: 0.5rem; }
+    .bc-bars li { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr) 3.25rem; gap: 0.6rem; align-items: center; }
+    .bc-bar { height: 1rem; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+    .bc-bar span { display: block; height: 100%; border-radius: 999px; }
+    .bc-bars b { text-align: right; font-variant-numeric: tabular-nums; }
+    .bc-alert { margin: 1rem 0 0; padding: 0.75rem 0.9rem; border-radius: var(--radius-md); border: 1.5px solid var(--danger); }
+    .bc-ok { margin: 1rem 0 0; padding: 0.75rem 0.9rem; border-radius: var(--radius-md); border: 1.5px solid var(--design); background: var(--design-tint); }
+    .bc-goals { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; gap: 0.4rem; font-size: 0.95rem; }
+    .bc-goals li::before { content: "○ "; font-weight: 700; color: var(--ink-soft); }
+    .bc-goals li.is-done::before { content: "✓ "; color: var(--design); }
+
+    .bc-history, .bc-real { margin-top: 1rem; }
+    .bc-table-wrap { overflow-x: auto; }
+    .bc-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; min-width: 34rem; }
+    .bc-table th, .bc-table td { text-align: left; padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+    .bc-table th { font-size: var(--step--1); color: var(--ink-soft); }
+    .bc-table td.low { color: var(--danger); font-weight: 700; }
+    .bc-real ul { margin: 0; padding-left: 1.2rem; }
+    .bc-real li { margin-bottom: 0.6rem; }
+
+    @media print { .bc-controls { display: none; } .bc-layout { display: block; } }
+  </style>
+</head>
+
+<body class="cat-literacy" data-tool="biased-classifier">
+
+<main id="main" class="page tool-page">
+
+  <header class="tool-intro">
+    <p class="tool-intro__cat"><a href="../../#literacy" data-pl-category-link data-pl="category">Digital literacy</a></p>
+    <h1 data-pl="name">Train a Biased Classifier</h1>
+    <p class="lede" data-pl="description">Teach a tiny model from lopsided examples and see where it goes wrong.</p>
+    <dl class="tool-intro__meta">
+      <div><dt>Time</dt><dd data-pl="minutes">15 minutes</dd></div>
+      <div><dt>You leave with</dt><dd data-pl="output">A worked example of data bias</dd></div>
+    </dl>
+  </header>
+
+  <section class="tool-steps" aria-labelledby="how-title">
+    <h2 id="how-title">How it works</h2>
+    <ol>
+      <li>Read the brief and look at the training data: how many of each kind of apple the model learns from.</li>
+      <li>Train the model and test it. Check the results for each kind of apple, not just the overall score.</li>
+      <li>Change the data or what the model can see, then train again.</li>
+      <li>Try to get every kind of apple to 85% or better, then reflect on where this happens in real life.</li>
+    </ol>
+  </section>
+
+  <section class="panel bc-brief" aria-labelledby="brief-title">
+    <h2 id="brief-title">The brief</h2>
+    <p>A fruit co-op in Hawke’s Bay wants an app that sorts ripe apples from unripe ones. It grows red, yellow and green varieties. For each apple, the app knows two things: its <strong>colour</strong>, and its <strong>sweetness</strong> from a handheld sugar sensor.</p>
+    <p>You’ll train a simple model by showing it labelled examples. The catch: most of the photos you’ve been given came from one orchard that grows red apples.</p>
+  </section>
+
+  <div class="bc-layout">
+
+    <section class="panel bc-controls" aria-labelledby="ctrl-title">
+      <h2 id="ctrl-title">Training data</h2>
+      <p class="hint" style="margin:0">How many examples of each kind the model learns from. Each set is half ripe, half unripe.</p>
+      <div id="crates"></div>
+      <h3>What can the model see?</h3>
+      <label class="bc-feature"><input type="checkbox" id="f-colour" checked> <span><strong>Colour</strong><br><span class="hint">From red through to green</span></span></label>
+      <label class="bc-feature"><input type="checkbox" id="f-sweet" checked> <span><strong>Sweetness</strong><br><span class="hint">From the sugar sensor</span></span></label>
+      <button class="btn btn--primary bc-train" type="button" id="train-btn">Train and test the model</button>
+      <p class="bc-stale" id="stale" hidden>Settings changed. Train again to see the effect.</p>
+    </section>
+
+    <div id="workspace">
+      <section class="panel bc-results" aria-labelledby="res-title">
+        <h2 id="res-title">What the model learned</h2>
+        <div id="plot"></div>
+        <div class="bc-legend">
+          <span><i style="background:var(--ripe-zone)"></i>Model says ripe</span>
+          <span><i style="background:var(--unripe-zone)"></i>Model says unripe</span>
+          <span>● Ripe example</span>
+          <span>■ Unripe example</span>
+        </div>
+        <label class="bc-toggle-test"><input type="checkbox" id="show-test"> Show the test apples, with mistakes circled</label>
+
+        <h2 style="margin-top:1.5rem">Test results</h2>
+        <p class="hint" style="margin:0">The model is tested on 60 new apples: 20 of each kind.</p>
+        <div id="score"></div>
+        <ul class="bc-goals" id="goals" aria-label="Goals"></ul>
+      </section>
+    </div>
+
+  </div>
+
+  <section class="panel bc-history" aria-labelledby="hist-title">
+    <h2 id="hist-title">Your training runs</h2>
+    <div class="bc-table-wrap" id="history"></div>
+  </section>
+
+  <section class="panel bc-real" aria-labelledby="real-title">
+    <h2 id="real-title">Where this happens for real</h2>
+    <ul>
+      <li><strong>Faces.</strong> Studies such as Gender Shades (2018) found commercial face analysis tools made far more mistakes for darker-skinned women than for lighter-skinned men, partly because of who was in the training data.</li>
+      <li><strong>Voices.</strong> Speech recognition often works less well for accents and languages that are under-represented in its training recordings.</li>
+      <li><strong>Health.</strong> Tools trained on data from one population can be less accurate for others, such as a skin-condition tool trained mostly on lighter skin.</li>
+      <li><strong>In Aotearoa.</strong> Te Hiku Media built te reo Māori speech recognition using recordings from its own communities, and kept control over how that data is used.</li>
+    </ul>
+  </section>
+
+  <section class="tool-actions" aria-label="Save and export">
+    <p class="tool-actions__note">Your runs and reflections save automatically in this browser.</p>
+    <div class="tool-actions__buttons">
+      <button class="btn btn--small" type="button" data-action="image">Download image</button>
+      <button class="btn btn--small" type="button" data-action="summary">Download summary</button>
+      <button class="btn btn--small" type="button" data-action="save">Save a copy</button>
+      <button class="btn btn--small" type="button" data-action="open">Open a copy</button>
+      <button class="btn btn--small" type="button" data-action="print">Print or save as PDF</button>
+      <button class="btn btn--small btn--danger" type="button" data-action="reset">Start over</button>
+    </div>
+  </section>
+
+  <section class="reflect" aria-labelledby="reflect-title">
+    <h2 id="reflect-title">Reflect</h2>
+    <p>Jot down a few thoughts. These save with the rest of your work.</p>
+    <ol>
+      <li>
+        <label for="r1">The overall score looked fine at first. What did it hide?</label>
+        <textarea id="r1" data-reflect="hidden"></textarea>
+      </li>
+      <li>
+        <label for="r2">Here, adding data and hiding colour both worked. Which fix would be harder in the real world, and why?</label>
+        <textarea id="r2" data-reflect="fix"></textarea>
+      </li>
+      <li>
+        <label for="r3">Think of an automated decision in your sector. Whose data might be missing from it, and who would notice?</label>
+        <textarea id="r3" data-reflect="sector"></textarea>
+      </li>
+    </ol>
+  </section>
+
+</main>
+
+<script src="../../assets/js/tools.js"></script>
+<script src="../../assets/js/playlab.js"></script>
+
+<script>
+(function () {
+  "use strict";
+
+  var TOOL_ID = "biased-classifier";
+  var K = 5, POOL = 40, TEST_EACH = 20, TARGET = 85;
+
+  var VARIETIES = [
+    { id: "red", name: "Red apples", note: "Plenty of photos from the main orchard", colour: "var(--apple-red)", hex: "#C0392B",
+      ripe: [0.05, 0.30], unripe: [0.42, 0.62] },
+    { id: "yellow", name: "Yellow apples", note: "Grown by a few members", colour: "var(--apple-yellow)", hex: "#D9A400",
+      ripe: [0.33, 0.52], unripe: [0.55, 0.75] },
+    { id: "green", name: "Green apples", note: "A newer orchard, few photos so far", colour: "var(--apple-green)", hex: "#5E9E3A",
+      ripe: [0.62, 0.85], unripe: [0.72, 0.95] }
+  ];
+  var SWEET = { ripe: [0.55, 0.80], unripe: [0.20, 0.45] };   // ripeness really depends on sweetness
+
+  /* ---------- Seeded random numbers, so everyone gets the same apples ---------- */
+  function rng(seed) {
+    return function () {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function between(r, range) { return range[0] + r() * (range[1] - range[0]); }
+  function makeApples(v, n, seed) {
+    var r = rng(seed), out = [];
+    for (var i = 0; i < n; i++) {
+      var ripe = i % 2 === 0;   // alternate, so any first-n slice is balanced
+      out.push({ v: v.id, ripe: ripe, x: between(r, ripe ? v.ripe : v.unripe), y: between(r, ripe ? SWEET.ripe : SWEET.unripe) });
+    }
+    return out;
+  }
+  var POOLS = {}, TESTS = [];
+  VARIETIES.forEach(function (v, i) {
+    POOLS[v.id] = makeApples(v, POOL, 101 + i * 17);
+    TESTS = TESTS.concat(makeApples(v, TEST_EACH, 907 + i * 31));
+  });
+
+  var EMPTY = { counts: { red: 40, yellow: 0, green: 3 }, colour: true, sweet: true, showTest: false, runs: [], goals: {}, reflect: {} };
+  function fresh() { return JSON.parse(JSON.stringify(EMPTY)); }
+  var store = PlayLab.store(TOOL_ID);
+  var state = Object.assign(fresh(), store.get("state", {}) || {});
+  function save() { store.set("state", state); }
+
+  var esc = PlayLab.escape;
+  var $ = function (id) { return document.getElementById(id); };
+  function variety(id) { return VARIETIES.find(function (v) { return v.id === id; }); }
+
+  /* ==================================================================
+     The model: k-nearest neighbours
+     ================================================================== */
+  var trained = null;   // { train, colour, sweet }
+  function trainingSet() {
+    var t = [];
+    VARIETIES.forEach(function (v) { t = t.concat(POOLS[v.id].slice(0, state.counts[v.id])); });
+    return t;
+  }
+  function predict(model, x, y) {
+    var wx = model.colour ? 1 : 0, wy = model.sweet ? 1 : 0;
+    var d = model.train.map(function (a) {
+      var dx = (a.x - x) * wx, dy = (a.y - y) * wy;
+      return { d: dx * dx + dy * dy, ripe: a.ripe };
+    }).sort(function (p, q) { return p.d - q.d; });
+    var k = Math.min(K, d.length), votes = 0;
+    for (var i = 0; i < k; i++) votes += d[i].ripe ? 1 : -1;
+    return votes === 0 ? d[0].ripe : votes > 0;
+  }
+  function evaluate(model) {
+    var res = { overall: 0, by: {} }, right = 0;
+    VARIETIES.forEach(function (v) { res.by[v.id] = { right: 0, total: 0 }; });
+    TESTS.forEach(function (a) {
+      var ok = predict(model, a.x, a.y) === a.ripe;
+      a.ok = ok;
+      res.by[a.v].total++; if (ok) { res.by[a.v].right++; right++; }
+    });
+    res.overall = Math.round(right / TESTS.length * 100);
+    VARIETIES.forEach(function (v) { var b = res.by[v.id]; b.pct = Math.round(b.right / b.total * 100); });
+    return res;
+  }
+
+  /* ==================================================================
+     Controls
+     ================================================================== */
+  function renderCrates() {
+    $("crates").innerHTML = VARIETIES.map(function (v) {
+      return '<div class="bc-crate"><div class="bc-crate__top"><label for="c-' + v.id + '"><span class="bc-swatch" style="background:' + v.colour + '"></span>' + esc(v.name) + "</label>" +
+        '<output id="o-' + v.id + '" for="c-' + v.id + '">' + state.counts[v.id] + "</output></div>" +
+        '<input type="range" id="c-' + v.id + '" data-v="' + v.id + '" min="0" max="' + POOL + '" step="1" value="' + state.counts[v.id] + '" aria-describedby="n-' + v.id + '">' +
+        '<p id="n-' + v.id + '">' + esc(v.note) + "</p></div>";
+    }).join("");
+  }
+  function markStale() { $("stale").hidden = !trained; }
+  $("crates").addEventListener("input", function (e) {
+    var id = e.target.dataset.v; if (!id) return;
+    state.counts[id] = Number(e.target.value);
+    $("o-" + id).textContent = e.target.value;
+    save(); markStale();
+  });
+  $("f-colour").addEventListener("change", function (e) { state.colour = e.target.checked; save(); markStale(); });
+  $("f-sweet").addEventListener("change", function (e) { state.sweet = e.target.checked; save(); markStale(); });
+  $("show-test").addEventListener("change", function (e) { state.showTest = e.target.checked; save(); renderPlot(); });
+
+  $("train-btn").addEventListener("click", function () {
+    if (!state.colour && !state.sweet) { PlayLab.toast("The model needs to see at least one thing. Tick colour or sweetness"); return; }
+    var train = trainingSet();
+    if (train.length < 2) { PlayLab.toast("Give the model at least a couple of examples to learn from"); return; }
+    trained = { train: train, colour: state.colour, sweet: state.sweet };
+    var res = evaluate(trained);
+    state.runs.push({
+      counts: JSON.parse(JSON.stringify(state.counts)), colour: state.colour, sweet: state.sweet,
+      overall: res.overall, red: res.by.red.pct, yellow: res.by.yellow.pct, green: res.by.green.pct
+    });
+    if (state.runs.length > 15) state.runs.shift();
+    checkGoals(res);
+    save();
+    $("stale").hidden = true;
+    renderPlot(); renderScore(res); renderHistory();
+    PlayLab.toast("Trained on " + train.length + " apples. Overall score " + res.overall + "%");
+  });
+
+  /* ==================================================================
+     Plot: colour across, sweetness up
+     ================================================================== */
+  var L = 60, R = 500, T = 20, B = 360, COLS = 44, ROWS = 34;
+  function sx(x) { return L + x * (R - L); }
+  function sy(y) { return B - y * (B - T); }
+
+  function renderPlot() {
+    var cells = "";
+    if (trained) {
+      var cw = (R - L) / COLS, ch = (B - T) / ROWS;
+      for (var i = 0; i < COLS; i++) for (var j = 0; j < ROWS; j++) {
+        var x = (i + 0.5) / COLS, y = 1 - (j + 0.5) / ROWS;
+        cells += '<rect class="' + (predict(trained, x, y) ? "bc-cell-ripe" : "bc-cell-unripe") + '" x="' + (L + i * cw).toFixed(1) + '" y="' + (T + j * ch).toFixed(1) + '" width="' + (cw + 0.5).toFixed(1) + '" height="' + (ch + 0.5).toFixed(1) + '"/>';
+      }
+    }
+    function pt(a, size, test) {
+      var v = variety(a.v), x = sx(a.x), y = sy(a.y);
+      var shape = a.ripe
+        ? '<circle class="bc-pt" cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + size + '" fill="' + v.hex + '"/>'
+        : '<rect class="bc-pt unripe" x="' + (x - size).toFixed(1) + '" y="' + (y - size).toFixed(1) + '" width="' + size * 2 + '" height="' + size * 2 + '" fill="' + v.hex + '"/>';
+      return shape + (test && !a.ok ? '<circle class="bc-wrong" cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + (size + 5) + '"/>' : "");
+    }
+    var points = state.showTest && trained ? TESTS.map(function (a) { return pt(a, 5, true); }).join("") : trainingSet().map(function (a) { return pt(a, 5.5, false); }).join("");
+
+    $("plot").innerHTML =
+      '<svg class="bc-svg" viewBox="0 0 520 430" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="pl-t pl-d">' +
+      '<title id="pl-t">What the model learned</title>' +
+      '<desc id="pl-d">' + esc(trained ? "A map of colour against sweetness, shaded where the model says ripe or unripe." : "The training apples, plotted by colour and sweetness. Train the model to see what it learns.") + "</desc>" +
+      '<defs><linearGradient id="hue" x1="0" x2="1"><stop offset="0" stop-color="#C0392B"/><stop offset="0.45" stop-color="#D9A400"/><stop offset="1" stop-color="#5E9E3A"/></linearGradient></defs>' +
+      (cells || '<rect x="' + L + '" y="' + T + '" width="' + (R - L) + '" height="' + (B - T) + '" fill="var(--surface-2)"/>') +
+      '<line class="bc-axis" x1="' + L + '" y1="' + B + '" x2="' + R + '" y2="' + B + '"/>' +
+      '<line class="bc-axis" x1="' + L + '" y1="' + T + '" x2="' + L + '" y2="' + B + '"/>' +
+      '<rect x="' + L + '" y="' + (B + 8) + '" width="' + (R - L) + '" height="8" rx="4" fill="url(#hue)"/>' +
+      '<text x="' + L + '" y="' + (B + 34) + '">Red</text><text x="' + R + '" y="' + (B + 34) + '" text-anchor="end">Green</text>' +
+      '<text x="' + ((L + R) / 2) + '" y="' + (B + 56) + '" text-anchor="middle" style="font-weight:700">Colour' + (trained && !trained.colour ? " (hidden from the model)" : "") + "</text>" +
+      '<text transform="translate(' + (L - 14) + " " + B + ') rotate(-90)">Sour</text>' +
+      '<text transform="translate(' + (L - 14) + " " + T + ') rotate(-90)" text-anchor="end">Sweet</text>' +
+      '<text transform="translate(' + (L - 34) + " " + ((T + B) / 2) + ') rotate(-90)" text-anchor="middle" style="font-weight:700">Sweetness' + (trained && !trained.sweet ? " (hidden)" : "") + "</text>" +
+      points + "</svg>";
+  }
+
+  /* ==================================================================
+     Results, goals and history
+     ================================================================== */
+  function renderScore(res) {
+    if (!res) { $("score").innerHTML = '<p class="hint" style="margin-top:1rem">Train the model to see how it does.</p>'; return; }
+    var pcts = VARIETIES.map(function (v) { return res.by[v.id].pct; });
+    var worst = VARIETIES.reduce(function (w, v) { return res.by[v.id].pct < res.by[w.id].pct ? v : w; });
+    var spread = Math.max.apply(null, pcts) - Math.min.apply(null, pcts);
+    var html = '<div class="bc-score"><strong>' + res.overall + '%</strong><span>overall accuracy</span></div>' +
+      '<ul class="bc-bars">' + VARIETIES.map(function (v) {
+        var b = res.by[v.id];
+        return "<li><span>" + esc(v.name) + '</span><span class="bc-bar" role="img" aria-label="' + b.pct + '% correct"><span style="width:' + b.pct + "%;background:" + v.colour + '"></span></span><b>' + b.pct + "%</b></li>";
+      }).join("") + "</ul>";
+    if (spread >= 20) {
+      html += '<p class="bc-alert"><strong>Look closer.</strong> The overall score hides a big gap: the model gets only ' + res.by[worst.id].pct + "% of " + esc(worst.name.toLowerCase()) + " right.</p>";
+    } else if (Math.min.apply(null, pcts) >= TARGET) {
+      html += '<p class="bc-ok"><strong>Fair across the board.</strong> Every kind of apple is at ' + TARGET + "% or better.</p>";
+    }
+    $("score").innerHTML = html;
+  }
+
+  var GOALS = [
+    { id: "all", text: "Get every kind of apple to " + TARGET + "% or better" },
+    { id: "data", text: "Do it by changing the training data, with colour still visible" },
+    { id: "features", text: "Do it a second way: by changing what the model can see" }
+  ];
+  function checkGoals(res) {
+    var fair = VARIETIES.every(function (v) { return res.by[v.id].pct >= TARGET; });
+    if (!fair) return;
+    state.goals.all = true;
+    if (state.colour && state.sweet) state.goals.data = true;
+    if (!state.colour || !state.sweet) state.goals.features = true;
+    renderGoals();
+  }
+  function renderGoals() {
+    $("goals").innerHTML = GOALS.map(function (g) {
+      return '<li class="' + (state.goals[g.id] ? "is-done" : "") + '">' + esc(g.text) + (state.goals[g.id] ? '<span class="visually-hidden"> (done)</span>' : "") + "</li>";
+    }).join("");
+  }
+
+  function renderHistory() {
+    if (!state.runs.length) { $("history").innerHTML = '<p class="empty">Each time you train the model, the result is added here so you can compare.</p>'; return; }
+    function cell(p) { return '<td class="' + (p < TARGET ? "low" : "") + '">' + p + "%</td>"; }
+    $("history").innerHTML = '<table class="bc-table"><thead><tr><th scope="col">Run</th><th scope="col">Red / yellow / green examples</th><th scope="col">Model sees</th><th scope="col">Overall</th><th scope="col">Red</th><th scope="col">Yellow</th><th scope="col">Green</th></tr></thead><tbody>' +
+      state.runs.map(function (r, i) {
+        var sees = [r.colour ? "colour" : "", r.sweet ? "sweetness" : ""].filter(Boolean).join(" and ");
+        return "<tr><td>" + (i + 1) + "</td><td>" + r.counts.red + " / " + r.counts.yellow + " / " + r.counts.green + "</td><td>" + sees + "</td><td>" + r.overall + "%</td>" + cell(r.red) + cell(r.yellow) + cell(r.green) + "</tr>";
+      }).join("") + "</tbody></table>";
+  }
+
+  /* ---------- Reflections ---------- */
+  var reflectFields = document.querySelectorAll("[data-reflect]");
+  function renderReflect() { reflectFields.forEach(function (f) { f.value = state.reflect[f.dataset.reflect] || ""; }); }
+  reflectFields.forEach(function (f) {
+    f.addEventListener("input", function () { state.reflect[f.dataset.reflect] = f.value; save(); });
+  });
+
+  /* ==================================================================
+     Save and export
+     ================================================================== */
+  function summary() {
+    var lines = [
+      "# Train a Biased Classifier",
+      "",
+      "Futures PlayLab, academyEX. Created " + new Date().toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }) + ".",
+      "",
+      "## Training runs",
+      ""
+    ];
+    if (!state.runs.length) lines.push("_No runs yet._");
+    state.runs.forEach(function (r, i) {
+      lines.push("- Run " + (i + 1) + ": " + r.counts.red + " red, " + r.counts.yellow + " yellow, " + r.counts.green + " green examples; model sees " +
+        [r.colour ? "colour" : "", r.sweet ? "sweetness" : ""].filter(Boolean).join(" and ") +
+        ". Overall " + r.overall + "% (red " + r.red + "%, yellow " + r.yellow + "%, green " + r.green + "%).");
+    });
+    lines.push("", "## Goals", "");
+    GOALS.forEach(function (g) { lines.push("- [" + (state.goals[g.id] ? "x" : " ") + "] " + g.text); });
+    lines.push("", "## Reflections", "");
+    document.querySelectorAll(".reflect label").forEach(function (lab) {
+      var key = $(lab.htmlFor).dataset.reflect;
+      lines.push("**" + lab.textContent + "**", "", (state.reflect[key] || "").trim() || "_No answer yet._", "");
+    });
+    return lines.join("\n");
+  }
+
+  var actions = {
+    image: function () {
+      if (!trained) { PlayLab.toast("Train the model first, then download your results"); return; }
+      PlayLab.export.elementToPNG($("workspace"), PlayLab.export.filename(TOOL_ID, "png"))
+        .then(function () { PlayLab.toast("Image downloaded"); })
+        .catch(function (err) { PlayLab.toast(err.message); });
+    },
+    summary: function () {
+      PlayLab.export.markdown(PlayLab.export.filename(TOOL_ID + "-summary", "md"), summary());
+      PlayLab.toast("Summary downloaded");
+    },
+    save: function () {
+      PlayLab.export.saveFile(TOOL_ID, state);
+      PlayLab.toast("Copy saved to your downloads");
+    },
+    open: function () {
+      PlayLab.export.openSaveFile(TOOL_ID).then(function (data) {
+        state = Object.assign(fresh(), data);
+        trained = null;
+        save(); renderAll();
+        PlayLab.toast("Copy opened. Train the model to see the map");
+      }).catch(function (err) {
+        if (err.message !== "cancelled") PlayLab.toast(err.message);
+      });
+    },
+    print: function () { PlayLab.export.print(); },
+    reset: function () {
+      if (!confirm("Start over? This clears your runs, goals and reflections from this browser. Save a copy first if you want to keep them.")) return;
+      store.clear();
+      state = fresh(); trained = null;
+      renderAll();
+      PlayLab.toast("Reset to the original lopsided data");
+    }
+  };
+  document.querySelectorAll("[data-action]").forEach(function (btn) {
+    btn.addEventListener("click", function () { actions[btn.dataset.action](); });
+  });
+
+  function renderAll() {
+    renderCrates();
+    $("f-colour").checked = state.colour; $("f-sweet").checked = state.sweet; $("show-test").checked = state.showTest;
+    $("stale").hidden = true;
+    renderPlot(); renderScore(null); renderGoals(); renderHistory(); renderReflect();
+  }
+  renderAll();
+})();
+</script>
+</body>
+</html>

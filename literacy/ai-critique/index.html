@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en-NZ">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Output Critique Lab | Futures PlayLab</title>
+  <meta name="description" content="Compare AI and human work side by side using a practical checklist.">
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/css/playlab.css">
+  <script>try{var t=localStorage.getItem("playlab:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+  <style>
+    .ac-tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
+    .ac-tabs button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+    .ac-tabs .is-done::after { content: " ✓"; }
+    .ac-pair h2, .ac-own h2, .ac-overview h2 { font-size: var(--step-2); }
+    .ac-pair h3 { font-size: var(--step-1); margin-top: 1.75rem; }
+    .ac-sample { display: inline-block; margin: 0 0 0.6rem; padding: 0.15rem 0.6rem; border-radius: 999px; background: var(--surface-2); font-size: var(--step--1); font-weight: 700; }
+    .ac-task { padding: 0.85rem 1rem; border-radius: var(--radius-md); background: var(--accent-tint); }
+    .ac-task strong { display: block; font-size: var(--step--1); }
+    .ac-task p { margin: 0.2rem 0 0; }
+
+    .ac-versions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; margin-top: 1rem; }
+    @media (max-width: 820px) { .ac-versions { grid-template-columns: minmax(0, 1fr); } }
+    .ac-version { padding: 1rem 1.1rem; border: 1px solid var(--line); border-top: 5px solid var(--ink); border-radius: var(--radius-md); background: var(--bg); }
+    .ac-version h3 { margin: 0 0 0.6rem !important; font-size: var(--step-1); }
+    .ac-version__text { white-space: pre-wrap; margin: 0; line-height: 1.6; }
+
+    .ac-criteria { list-style: none; margin: 0.75rem 0 0; padding: 0; display: grid; gap: 0.6rem; }
+    .ac-crit { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr); gap: 0.5rem 1rem; align-items: center; padding: 0.7rem 0.9rem; border: 1px solid var(--line); border-radius: var(--radius-md); }
+    @media (max-width: 760px) { .ac-crit { grid-template-columns: minmax(0, 1fr); } }
+    .ac-crit__q strong { display: block; }
+    .ac-crit__q span { font-size: var(--step--1); color: var(--ink-soft); }
+    .ac-rate p { margin: 0 0 0.2rem; font-size: var(--step--1); font-weight: 700; }
+    .ac-seg { display: flex; gap: 0.25rem; }
+    .ac-seg button { flex: 1; font: inherit; font-size: 0.82rem; font-weight: 700; min-height: 34px; padding: 0.1rem 0.4rem; border-radius: var(--radius-sm); border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+    .ac-seg button:hover { border-color: var(--ink); }
+    .ac-seg button[data-val="strong"][aria-pressed="true"] { background: var(--design); border-color: var(--design); color: var(--on-accent); }
+    .ac-seg button[data-val="mixed"][aria-pressed="true"] { background: var(--literacy); border-color: var(--literacy); color: var(--surface); }
+    .ac-seg button[data-val="weak"][aria-pressed="true"] { background: var(--danger); border-color: var(--danger); color: var(--surface); }
+
+    .ac-verdict { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; margin-top: 0.75rem; }
+    @media (max-width: 700px) { .ac-verdict { grid-template-columns: minmax(0, 1fr); } }
+    .ac-verdict .ac-seg button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+    .ac-notes { margin-top: 1rem; }
+    .ac-reveal-btn { margin-top: 1rem; }
+    .ac-reveal { margin-top: 1rem; padding: 1rem 1.1rem; border-radius: var(--radius-md); border: 2px solid var(--accent); }
+    .ac-reveal__head { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); margin: 0 0 0.25rem; }
+    .ac-reveal__grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; margin-top: 0.75rem; }
+    @media (max-width: 700px) { .ac-reveal__grid { grid-template-columns: minmax(0, 1fr); } }
+    .ac-reveal__grid h4 { margin: 0 0 0.3rem; font-family: var(--font-body); font-size: var(--step-0); }
+    .ac-reveal__grid p { margin: 0; }
+
+    .ac-own, .ac-overview { margin-top: 1rem; }
+    .ac-own summary { cursor: pointer; font-weight: 700; font-family: var(--font-display); font-size: var(--step-1); }
+    .ac-own__grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.75rem 1rem; margin-top: 0.75rem; }
+    @media (max-width: 760px) { .ac-own__grid { grid-template-columns: minmax(0, 1fr); } }
+    .ac-own__grid .full { grid-column: 1 / -1; }
+    .ac-own textarea { min-height: 9rem; }
+    .ac-own fieldset { border: 0; padding: 0; margin: 0; }
+    .ac-own legend { font-weight: 700; padding: 0; margin-bottom: 0.3rem; }
+    .ac-own .ac-radio { display: inline-flex; align-items: center; gap: 0.35rem; margin: 0 1rem 0 0; font-weight: 400; }
+
+    .ac-table-wrap { overflow-x: auto; }
+    .ac-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; min-width: 30rem; }
+    .ac-table th, .ac-table td { text-align: left; padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--line); }
+    .ac-table th { font-size: var(--step--1); color: var(--ink-soft); }
+    .ac-insights { margin-top: 1rem; }
+    .ac-insights p { margin: 0 0 0.4rem; }
+
+    @media print {
+      .ac-tabs, .ac-own, .ac-reveal-btn { display: none; }
+      .ac-version, .ac-crit { break-inside: avoid; }
+    }
+  </style>
+</head>
+
+<body class="cat-literacy" data-tool="ai-critique">
+
+<main id="main" class="page tool-page">
+
+  <header class="tool-intro">
+    <p class="tool-intro__cat"><a href="../../#literacy" data-pl-category-link data-pl="category">Digital literacy</a></p>
+    <h1 data-pl="name">AI Output Critique Lab</h1>
+    <p class="lede" data-pl="description">Compare AI and human work side by side using a practical checklist.</p>
+    <dl class="tool-intro__meta">
+      <div><dt>Time</dt><dd data-pl="minutes">15 minutes</dd></div>
+      <div><dt>You leave with</dt><dd data-pl="output">A critique checklist you can reuse</dd></div>
+    </dl>
+  </header>
+
+  <section class="tool-steps" aria-labelledby="how-title">
+    <h2 id="how-title">How it works</h2>
+    <ol>
+      <li>Read the task, then both versions. One was produced by AI and one by a person.</li>
+      <li>Check each version against the six questions. Judge the work, not who you think wrote it.</li>
+      <li>Decide which you’d actually use, and guess which was AI. Then reveal the answer and the notes.</li>
+      <li>Work through each pair, or add your own, then look at the patterns and reflect.</li>
+    </ol>
+  </section>
+
+  <div class="ac-tabs" id="tabs" role="group" aria-label="Choose a pair"></div>
+
+  <section class="panel ac-pair" id="pair" aria-label="Current pair"></section>
+
+  <details class="panel ac-own" id="own">
+    <summary>Add your own pair</summary>
+    <p class="hint">Compare an AI tool’s answer with your own, or a colleague’s, for the same task. Your pairs stay in this browser.</p>
+    <form id="own-form" class="ac-own__grid">
+      <div class="full"><label for="own-title">Short title</label><input type="text" id="own-title" maxlength="80" placeholder="For example, summarising our annual report"></div>
+      <div class="full"><label for="own-task">What was the task?</label><input type="text" id="own-task" maxlength="240" placeholder="Who asked for what, and who is it for?"></div>
+      <div><label for="own-a">Version A</label><textarea id="own-a" maxlength="4000"></textarea></div>
+      <div><label for="own-b">Version B</label><textarea id="own-b" maxlength="4000"></textarea></div>
+      <fieldset class="full"><legend>Which version was AI?</legend>
+        <label class="ac-radio"><input type="radio" name="own-ai" value="a"> Version A</label>
+        <label class="ac-radio"><input type="radio" name="own-ai" value="b"> Version B</label>
+        <label class="ac-radio"><input type="radio" name="own-ai" value="" checked> Not sure, or I’ll decide later</label>
+      </fieldset>
+      <div class="full"><button class="btn btn--primary" type="submit">Add pair</button></div>
+    </form>
+  </details>
+
+  <section class="panel ac-overview" id="workspace" aria-labelledby="ov-title">
+    <h2 id="ov-title">Your critiques so far</h2>
+    <div class="ac-table-wrap" id="overview"></div>
+    <div class="ac-insights" id="insights"></div>
+  </section>
+
+  <section class="tool-actions" aria-label="Save and export">
+    <p class="tool-actions__note">Your ratings, pairs and reflections save automatically in this browser.</p>
+    <div class="tool-actions__buttons">
+      <button class="btn btn--small" type="button" data-action="image">Download image</button>
+      <button class="btn btn--small" type="button" data-action="summary">Download summary</button>
+      <button class="btn btn--small" type="button" data-action="checklist">Download blank checklist</button>
+      <button class="btn btn--small" type="button" data-action="save">Save a copy</button>
+      <button class="btn btn--small" type="button" data-action="open">Open a copy</button>
+      <button class="btn btn--small" type="button" data-action="print">Print or save as PDF</button>
+      <button class="btn btn--small btn--danger" type="button" data-action="reset">Start over</button>
+    </div>
+  </section>
+
+  <section class="reflect" aria-labelledby="reflect-title">
+    <h2 id="reflect-title">Reflect</h2>
+    <p>Jot down a few thoughts. These save with the rest of your work.</p>
+    <ol>
+      <li>
+        <label for="r1">Which checklist question was most useful for judging quality? Which was hardest to answer?</label>
+        <textarea id="r1" data-reflect="useful"></textarea>
+      </li>
+      <li>
+        <label for="r2">Did finding out which version was AI change how you felt about it? Should it?</label>
+        <textarea id="r2" data-reflect="changed"></textarea>
+      </li>
+      <li>
+        <label for="r3">How will you check AI-generated work in your own role from now on?</label>
+        <textarea id="r3" data-reflect="practice"></textarea>
+      </li>
+    </ol>
+  </section>
+
+</main>
+
+<script src="../../assets/js/tools.js"></script>
+<script src="../../assets/js/playlab.js"></script>
+
+<script>
+(function () {
+  "use strict";
+
+  var TOOL_ID = "ai-critique";
+
+  /* ==================================================================
+     THE PAIRS: replace these sample pairs with real examples
+     ------------------------------------------------------------------
+     Each pair needs:
+       id      a short unique name (letters, numbers, hyphens)
+       title   shown on the tab
+       task    what was asked, and for whom
+       a, b    the two versions (line breaks are kept)
+       ai      "a" or "b": which version was produced by AI
+       sample  true for demonstration pairs, false for real examples
+       notes   what to notice in each version, shown after the reveal
+
+     The sample pairs below were written for demonstration. In each, one
+     version imitates common AI habits and the other a careful human
+     writer. Replace them with real AI outputs and real human work, and
+     set sample to false.
+     ================================================================== */
+  var PAIRS = [
+    {
+      id: "privacy",
+      title: "Explaining privacy rules",
+      task: "A team leader asked for a short explanation, for a new staff member, of what the Privacy Act 2020 means when handling customer emails.",
+      sample: true,
+      ai: "a",
+      a: "Great question! The Privacy Act 2020 is New Zealand’s key law for protecting personal information, and it’s essential that every staff member understands it.\n\nWhen handling customer emails, keep these key points in mind:\n\n• Always keep customer information confidential and secure.\n• You must delete all customer emails after 12 months.\n• Only share information with people who need it.\n• Customers have the right to request their information at any time.\n\nBy following these guidelines, you’ll ensure full compliance with the Act and help build trust with our customers.",
+      b: "Hi Mere, quick rundown for your first week.\n\nThe Privacy Act 2020 sets out 13 information privacy principles. The ones that matter most for our inbox:\n- Only collect what we need to help the customer.\n- Keep emails in the shared inbox, not personal folders, so access is controlled.\n- Don’t forward customer details outside the team without checking first.\n- If a customer asks what we hold about them, they’re entitled to see it. Pass those requests to Sam, our privacy officer.\n\nThere’s no set number of years we keep emails for. The rule is not to keep them longer than we need them, and Sam’s working on our retention schedule. The Privacy Commissioner’s website (privacy.org.nz) has a good plain-English guide if you want more.",
+      notes: {
+        a: "Fluent and confident, but it states a rule that doesn’t exist: the Act has no fixed 12-month deletion requirement. It’s generic (no names, no process), cites nothing, and its promise of “full compliance” oversells a four-point list.",
+        b: "Less polished, but specific to the team and accurate: there are 13 information privacy principles, organisations must have a privacy officer, and the Act sets no fixed retention period. It’s open about what isn’t settled yet and points to a source."
+      }
+    },
+    {
+      id: "fourday",
+      title: "Summarising evidence",
+      task: "A manager asked for a one-paragraph summary of the evidence on four-day working weeks, to include in a board paper.",
+      sample: true,
+      ai: "b",
+      a: "The evidence is promising but still early. In New Zealand, trust company Perpetual Guardian trialled a four-day week in 2018 and reported that staff felt less stressed while productivity held steady; it then made the change permanent. A larger UK pilot in 2022 involved around 60 organisations, and most chose to continue afterwards. However, most trials are short, involve organisations that volunteered (and so may be more likely to succeed), and rely partly on self-reported measures. I’d suggest we treat this as a case for a careful pilot rather than proof it would work for us.",
+      b: "Research overwhelmingly shows that four-day working weeks are highly effective. A landmark 2023 study of over 10,000 New Zealand workers found productivity increased by 40% and sick days fell by 65%. Leading companies around the world have adopted the model with remarkable success, and experts agree it represents the future of work. Implementing a four-day week would almost certainly deliver significant benefits for our organisation.",
+      notes: {
+        a: "Names real trials you can check, gives a fair sense of scale, and flags weaknesses in the evidence: short trials, volunteer organisations and self-reported results. Its recommendation follows from the evidence rather than going beyond it.",
+        b: "Reads with authority, but the “landmark 2023 study” and its figures were invented for this sample, imitating a common AI error: convincing statistics with nothing behind them. “Experts agree” and “almost certainly” overstate the case. Any statistic in a board paper needs a source you can check."
+      }
+    },
+    {
+      id: "event",
+      title: "Promoting an event",
+      task: "A volunteer asked for a short social media post promoting a community planting day at a local stream.",
+      sample: true,
+      ai: "a",
+      a: "🌿✨ Join us for an unforgettable day of fun, community spirit and environmental action! ✨🌿\n\nTogether, we can make a real difference for our beautiful planet. Whether you’re a seasoned gardener or just getting started, there’s something for everyone. Don’t miss this amazing opportunity to connect with nature and your neighbours!\n\n#Community #Sustainability #MakeADifference",
+      b: "Kia ora koutou! We’re planting 500 native seedlings along Kōwhai Stream on Saturday 14 March, 9am till midday.\n\nBring gloves and a water bottle if you have them. We’ve got spades, sunblock and morning tea sorted. Parking is at the end of Riverbank Road. Kids are very welcome (under 12s with an adult, please).\n\nLast year’s planting is already a metre tall, so come and see the difference!\nAny questions, flick Aroha a message.",
+      notes: {
+        a: "Upbeat and polished, but it could advertise almost any event anywhere: no date, time, place or what to bring. Stacked emoji, stock phrases and generic hashtags are common AI defaults. Generic isn’t wrong, but it isn’t much use either.",
+        b: "Specific, practical and local, with a greeting in te reo Māori and a reason to come. It isn’t perfect: there’s no way to register, and nothing about what happens if it rains. Human-written doesn’t automatically mean better. The checklist is what tells you."
+      }
+    }
+  ];
+
+  var CRITERIA = [
+    { id: "accurate", name: "Accurate", q: "Are the facts right? Check at least one claim." },
+    { id: "sourced", name: "Backed up", q: "Can you trace where the information came from?" },
+    { id: "specific", name: "Specific", q: "Does it fit this situation, place and audience, or could it be about anything?" },
+    { id: "balanced", name: "Balanced", q: "Whose views, experiences or concerns are missing?" },
+    { id: "honest", name: "Honest about limits", q: "Does it admit uncertainty, or sound more confident than it should?" },
+    { id: "useful", name: "Useful", q: "Would it actually help the person who asked for it?" }
+  ];
+  var RATINGS = [["strong", "Strong"], ["mixed", "Mixed"], ["weak", "Weak"]];
+
+  var EMPTY = { current: PAIRS[0].id, answers: {}, custom: [], reflect: {} };
+  function fresh() { return JSON.parse(JSON.stringify(EMPTY)); }
+  var store = PlayLab.store(TOOL_ID);
+  var state = Object.assign(fresh(), store.get("state", {}) || {});
+  function save() { store.set("state", state); }
+
+  var esc = PlayLab.escape;
+  var $ = function (id) { return document.getElementById(id); };
+
+  function allPairs() { return PAIRS.concat(state.custom); }
+  function pair(id) { return allPairs().find(function (p) { return p.id === id; }) || PAIRS[0]; }
+  function answer(id) {
+    if (!state.answers[id]) state.answers[id] = { ratings: { a: {}, b: {} }, use: "", guess: "", revealed: false, notes: "" };
+    return state.answers[id];
+  }
+  function ratedCount(ans) { return Object.keys(ans.ratings.a).length + Object.keys(ans.ratings.b).length; }
+
+  /* ==================================================================
+     Tabs
+     ================================================================== */
+  function renderTabs() {
+    $("tabs").innerHTML = allPairs().map(function (p, i) {
+      var done = state.answers[p.id] && state.answers[p.id].revealed;
+      return '<button class="btn btn--small' + (done ? " is-done" : "") + '" type="button" data-pair="' + esc(p.id) + '" aria-pressed="' + (state.current === p.id) + '">' +
+        "Pair " + (i + 1) + ": " + esc(p.title) + (done ? '<span class="visually-hidden"> (done)</span>' : "") + "</button>";
+    }).join("");
+  }
+  $("tabs").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-pair]"); if (!b) return;
+    state.current = b.dataset.pair; save();
+    renderTabs(); renderPair();
+    $("pair").focus({ preventScroll: true });
+  });
+
+  /* ==================================================================
+     The current pair
+     ================================================================== */
+  function seg(group, current, options, labelId) {
+    return '<div class="ac-seg" data-group="' + group + '" role="group" aria-labelledby="' + labelId + '">' + options.map(function (o) {
+      return '<button type="button" data-val="' + o[0] + '" aria-pressed="' + (current === o[0]) + '">' + o[1] + "</button>";
+    }).join("") + "</div>";
+  }
+  function revealHTML(p, ans) {
+    var aiSide = p.ai ? p.ai.toUpperCase() : "";
+    var head;
+    if (!p.ai) head = "You didn’t record which version was AI for this pair.";
+    else if (p.sample) head = "In this sample, Version " + aiSide + " plays the AI role.";
+    else head = "Version " + aiSide + " was produced by AI.";
+    var verdict = "";
+    if (p.ai && ans.guess) {
+      verdict = ans.guess === "unsure" ? "You weren’t sure." : ans.guess === p.ai ? "You guessed correctly." : "You guessed the other version.";
+      if (ans.use) verdict += ans.use === "neither" ? " You wouldn’t use either." : ans.use === p.ai ? " You’d use the AI version." : " You’d use the non-AI version.";
+    }
+    var notes = p.notes && (p.notes.a || p.notes.b)
+      ? '<div class="ac-reveal__grid"><div><h4>Version A</h4><p>' + esc(p.notes.a || "") + "</p></div><div><h4>Version B</h4><p>" + esc(p.notes.b || "") + "</p></div></div>"
+      : "";
+    return '<div class="ac-reveal" role="status"><p class="ac-reveal__head">' + esc(head) + "</p><p style=\"margin:0\">" + esc(verdict) + "</p>" + notes + "</div>";
+  }
+
+  function renderPair() {
+    var p = pair(state.current), ans = answer(p.id);
+    var crit = CRITERIA.map(function (c) {
+      return '<li class="ac-crit"><div class="ac-crit__q"><strong>' + esc(c.name) + "</strong><span>" + esc(c.q) + "</span></div>" +
+        '<div class="ac-rate"><p id="l-a-' + c.id + '">Version A</p>' + seg("a:" + c.id, ans.ratings.a[c.id], RATINGS, "l-a-" + c.id) + "</div>" +
+        '<div class="ac-rate"><p id="l-b-' + c.id + '">Version B</p>' + seg("b:" + c.id, ans.ratings.b[c.id], RATINGS, "l-b-" + c.id) + "</div></li>";
+    }).join("");
+    var isCustom = state.custom.some(function (x) { return x.id === p.id; });
+
+    $("pair").innerHTML =
+      (p.sample ? '<p class="ac-sample">Sample pair, written for demonstration</p>' : "") +
+      '<h2 tabindex="-1">' + esc(p.title) + "</h2>" +
+      '<div class="ac-task"><strong>The task</strong><p>' + esc(p.task || "No task described.") + "</p></div>" +
+      '<div class="ac-versions">' +
+        '<article class="ac-version"><h3>Version A</h3><p class="ac-version__text">' + esc(p.a) + "</p></article>" +
+        '<article class="ac-version"><h3>Version B</h3><p class="ac-version__text">' + esc(p.b) + "</p></article>" +
+      "</div>" +
+      "<h3>Check each version</h3><p class=\"hint\" style=\"margin:0\">" + ratedCount(ans) + " of " + CRITERIA.length * 2 + " checks done.</p>" +
+      '<ul class="ac-criteria">' + crit + "</ul>" +
+      "<h3>Your verdict</h3>" +
+      '<div class="ac-verdict">' +
+        '<div><p class="label" id="l-use">Which would you use?</p>' + seg("use", ans.use, [["a", "Version A"], ["b", "Version B"], ["neither", "Neither"]], "l-use") + "</div>" +
+        '<div><p class="label" id="l-guess">Which do you think was AI?</p>' + seg("guess", ans.guess, [["a", "Version A"], ["b", "Version B"], ["unsure", "Can’t tell"]], "l-guess") + "</div>" +
+      "</div>" +
+      '<div class="ac-notes"><label for="pair-notes">What did you notice?</label><textarea id="pair-notes" maxlength="1000">' + esc(ans.notes) + "</textarea></div>" +
+      (ans.revealed ? revealHTML(p, ans) : '<button class="btn btn--primary ac-reveal-btn" type="button" id="reveal-btn">Reveal which was AI</button>') +
+      (isCustom ? '<p style="margin-top:1rem"><button class="btn btn--small btn--danger" type="button" id="remove-pair">Remove this pair</button></p>' : "");
+  }
+
+  $("pair").addEventListener("click", function (e) {
+    var p = pair(state.current), ans = answer(p.id);
+    var b = e.target.closest(".ac-seg button");
+    if (b) {
+      var group = b.parentNode.dataset.group, val = b.dataset.val;
+      if (group === "use" || group === "guess") {
+        ans[group] = ans[group] === val ? "" : val;
+      } else {
+        var parts = group.split(":"), side = parts[0], c = parts[1];
+        if (ans.ratings[side][c] === val) delete ans.ratings[side][c]; else ans.ratings[side][c] = val;
+      }
+      b.parentNode.querySelectorAll("button").forEach(function (x) {
+        var cur = group === "use" || group === "guess" ? ans[group] : ans.ratings[group.split(":")[0]][group.split(":")[1]];
+        x.setAttribute("aria-pressed", String(x.dataset.val === cur));
+      });
+      var count = $("pair").querySelector("h3 + .hint");
+      if (count) count.textContent = ratedCount(ans) + " of " + CRITERIA.length * 2 + " checks done.";
+      save(); renderOverview();
+      return;
+    }
+    if (e.target.id === "reveal-btn") {
+      if (!ans.guess) { PlayLab.toast("Make your guess first, even if it’s “Can’t tell”"); return; }
+      if (ratedCount(ans) < 6) { if (!confirm("You’ve done " + ratedCount(ans) + " of 12 checks. Reveal anyway?")) return; }
+      ans.revealed = true; save();
+      renderPair(); renderTabs(); renderOverview();
+      var r = $("pair").querySelector(".ac-reveal"); if (r) r.scrollIntoView({ block: "nearest" });
+    }
+    if (e.target.id === "remove-pair") {
+      if (!confirm("Remove this pair and your ratings for it?")) return;
+      state.custom = state.custom.filter(function (x) { return x.id !== p.id; });
+      delete state.answers[p.id];
+      state.current = PAIRS[0].id;
+      save(); renderAll();
+      PlayLab.toast("Pair removed");
+    }
+  });
+  $("pair").addEventListener("input", function (e) {
+    if (e.target.id !== "pair-notes") return;
+    answer(state.current).notes = e.target.value; save();
+  });
+
+  /* ==================================================================
+     Adding your own pair
+     ================================================================== */
+  $("own-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var title = $("own-title").value.trim(), a = $("own-a").value.trim(), b = $("own-b").value.trim();
+    if (!a || !b) { PlayLab.toast("Paste in both versions first"); (a ? $("own-b") : $("own-a")).focus(); return; }
+    var ai = (document.querySelector('input[name="own-ai"]:checked') || {}).value || "";
+    var p = { id: "own-" + Date.now().toString(36), title: title || "Your pair " + (state.custom.length + 1), task: $("own-task").value.trim(), a: a, b: b, ai: ai, sample: false, notes: { a: "", b: "" } };
+    state.custom.push(p);
+    state.current = p.id;
+    $("own-form").reset();
+    save(); renderAll();
+    $("own").open = false;
+    $("tabs").scrollIntoView({ block: "start" });
+    PlayLab.toast("Pair added. Check it the same way");
+  });
+
+  /* ==================================================================
+     Overview and insights
+     ================================================================== */
+  function renderOverview() {
+    var rows = allPairs().map(function (p, i) {
+      var ans = state.answers[p.id];
+      if (!ans) return "<tr><td>" + (i + 1) + ". " + esc(p.title) + '</td><td colspan="4" class="hint">Not started</td></tr>';
+      var use = ans.use ? (ans.use === "neither" ? "Neither" : "Version " + ans.use.toUpperCase()) : "–";
+      var guess = ans.guess ? (ans.guess === "unsure" ? "Can’t tell" : "Version " + ans.guess.toUpperCase()) : "–";
+      var actual = ans.revealed && p.ai ? "Version " + p.ai.toUpperCase() : ans.revealed ? "Not recorded" : "Not revealed";
+      return "<tr><td>" + (i + 1) + ". " + esc(p.title) + "</td><td>" + ratedCount(ans) + " of 12</td><td>" + use + "</td><td>" + guess + "</td><td>" + actual + "</td></tr>";
+    }).join("");
+    $("overview").innerHTML = '<table class="ac-table"><thead><tr><th scope="col">Pair</th><th scope="col">Checks</th><th scope="col">Would use</th><th scope="col">Your guess</th><th scope="col">AI version</th></tr></thead><tbody>' + rows + "</tbody></table>";
+
+    // Patterns across revealed pairs
+    var revealed = allPairs().filter(function (p) { return state.answers[p.id] && state.answers[p.id].revealed && p.ai; });
+    if (!revealed.length) { $("insights").innerHTML = '<p class="hint">Reveal a pair to start seeing patterns.</p>'; return; }
+    var right = 0, guessed = 0, weakAI = {}, weakHuman = {}, usedAI = 0, used = 0;
+    revealed.forEach(function (p) {
+      var ans = state.answers[p.id], human = p.ai === "a" ? "b" : "a";
+      if (ans.guess && ans.guess !== "unsure") { guessed++; if (ans.guess === p.ai) right++; }
+      if (ans.use && ans.use !== "neither") { used++; if (ans.use === p.ai) usedAI++; }
+      CRITERIA.forEach(function (c) {
+        if (ans.ratings[p.ai][c.id] === "weak") weakAI[c.id] = (weakAI[c.id] || 0) + 1;
+        if (ans.ratings[human][c.id] === "weak") weakHuman[c.id] = (weakHuman[c.id] || 0) + 1;
+      });
+    });
+    function top(map) {
+      var max = 0; for (var k in map) max = Math.max(max, map[k]);
+      if (!max) return "";
+      var n = CRITERIA.filter(function (c) { return map[c.id] === max; }).map(function (c) { return c.name.toLowerCase(); });
+      return n.length <= 1 ? n.join("") : n.slice(0, -1).join(", ") + " and " + n[n.length - 1];
+    }
+    var out = [];
+    out.push("<p><strong>Spotting AI:</strong> " + (guessed ? "you were right " + right + " of " + guessed + " times you made a call." : "you haven’t made a firm guess yet.") + "</p>");
+    if (used) out.push("<p><strong>Choosing:</strong> you’d use the AI version in " + usedAI + " of " + used + " pairs where you picked one.</p>");
+    var wa = top(weakAI), wh = top(weakHuman);
+    if (wa) out.push("<p><strong>AI versions were most often weak on:</strong> " + esc(wa) + ".</p>");
+    if (wh) out.push("<p><strong>Human versions were most often weak on:</strong> " + esc(wh) + ".</p>");
+    $("insights").innerHTML = out.join("");
+  }
+
+  /* ---------- Reflections ---------- */
+  var reflectFields = document.querySelectorAll("[data-reflect]");
+  function renderReflect() { reflectFields.forEach(function (f) { f.value = state.reflect[f.dataset.reflect] || ""; }); }
+  reflectFields.forEach(function (f) {
+    f.addEventListener("input", function () { state.reflect[f.dataset.reflect] = f.value; save(); });
+  });
+
+  /* ==================================================================
+     Save and export
+     ================================================================== */
+  function summary() {
+    var lines = [
+      "# AI Output Critique Lab",
+      "",
+      "Futures PlayLab, academyEX. Created " + new Date().toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }) + ".",
+      ""
+    ];
+    allPairs().forEach(function (p, i) {
+      var ans = state.answers[p.id];
+      lines.push("## Pair " + (i + 1) + ": " + p.title + (p.sample ? " (sample)" : ""), "", "_Task: " + (p.task || "not described") + "_", "");
+      if (!ans) { lines.push("_Not started._", ""); return; }
+      lines.push("| Check | Version A | Version B |", "|---|---|---|");
+      CRITERIA.forEach(function (c) {
+        lines.push("| " + c.name + " | " + (ans.ratings.a[c.id] || "–") + " | " + (ans.ratings.b[c.id] || "–") + " |");
+      });
+      lines.push("", "- Would use: " + (ans.use ? (ans.use === "neither" ? "neither" : "Version " + ans.use.toUpperCase()) : "not decided"),
+        "- Guessed AI: " + (ans.guess ? (ans.guess === "unsure" ? "can’t tell" : "Version " + ans.guess.toUpperCase()) : "no guess"),
+        "- AI version: " + (ans.revealed && p.ai ? "Version " + p.ai.toUpperCase() + (p.sample ? " (sample role)" : "") : "not revealed"));
+      if (ans.notes.trim()) lines.push("- Notes: " + ans.notes.trim());
+      lines.push("");
+    });
+    lines.push("## Reflections", "");
+    document.querySelectorAll(".reflect label").forEach(function (lab) {
+      var key = $(lab.htmlFor).dataset.reflect;
+      lines.push("**" + lab.textContent + "**", "", (state.reflect[key] || "").trim() || "_No answer yet._", "");
+    });
+    return lines.join("\n");
+  }
+  function checklist() {
+    var lines = ["# AI output checklist", "", "From the Futures PlayLab at academyEX. Use it on any piece of work, whoever or whatever produced it.", ""];
+    CRITERIA.forEach(function (c) { lines.push("- [ ] **" + c.name + ":** " + c.q); });
+    lines.push("", "Then ask: would I put my name to this?");
+    return lines.join("\n");
+  }
+
+  var actions = {
+    image: function () {
+      PlayLab.export.elementToPNG($("workspace"), PlayLab.export.filename(TOOL_ID, "png"))
+        .then(function () { PlayLab.toast("Image downloaded"); })
+        .catch(function (err) { PlayLab.toast(err.message); });
+    },
+    summary: function () {
+      PlayLab.export.markdown(PlayLab.export.filename(TOOL_ID + "-summary", "md"), summary());
+      PlayLab.toast("Summary downloaded");
+    },
+    checklist: function () {
+      PlayLab.export.markdown("ai-output-checklist.md", checklist());
+      PlayLab.toast("Checklist downloaded");
+    },
+    save: function () {
+      PlayLab.export.saveFile(TOOL_ID, state);
+      PlayLab.toast("Copy saved to your downloads");
+    },
+    open: function () {
+      PlayLab.export.openSaveFile(TOOL_ID).then(function (data) {
+        state = Object.assign(fresh(), data);
+        save(); renderAll();
+        PlayLab.toast("Copy opened");
+      }).catch(function (err) {
+        if (err.message !== "cancelled") PlayLab.toast(err.message);
+      });
+    },
+    print: function () { PlayLab.export.print(); },
+    reset: function () {
+      if (!confirm("Start over? This clears your ratings, your own pairs and your reflections from this browser. Save a copy first if you want to keep them.")) return;
+      store.clear();
+      state = fresh();
+      renderAll();
+      PlayLab.toast("Cleared. Ready for a fresh start");
+    }
+  };
+  document.querySelectorAll("[data-action]").forEach(function (btn) {
+    btn.addEventListener("click", function () { actions[btn.dataset.action](); });
+  });
+
+  function renderAll() {
+    if (!allPairs().some(function (p) { return p.id === state.current; })) state.current = PAIRS[0].id;
+    renderTabs(); renderPair(); renderOverview(); renderReflect();
+  }
+  $("pair").setAttribute("tabindex", "-1");
+  renderAll();
+})();
+</script>
+</body>
+</html>
