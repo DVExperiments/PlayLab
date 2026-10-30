@@ -1,0 +1,720 @@
+<!doctype html>
+<html lang="en-NZ">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>What Your Browser Knows | Futures PlayLab</title>
+  <meta name="description" content="See what any website can learn about you without asking. Everything stays in your browser.">
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/css/playlab.css">
+  <script>try{var t=localStorage.getItem("playlab:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+  <style>
+    /* ---------- Top row: fingerprint and live tracker ---------- */
+    .wbk-top { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 1rem; }
+    @media (max-width: 820px) { .wbk-top { grid-template-columns: 1fr; } }
+    .wbk-top h2, .wbk-group h2 { font-size: var(--step-2); }
+
+    .wbk-code {
+      font-family: var(--font-display); font-weight: 800;
+      font-size: clamp(2.5rem, 6vw, 3.75rem); line-height: 1;
+      letter-spacing: 0.04em; font-variant-numeric: tabular-nums;
+      color: var(--accent); margin: 0.5rem 0 1rem; overflow-wrap: anywhere;
+    }
+    .wbk-code-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+    .wbk-challenge { border-top: 1px solid var(--line); margin-top: 1.5rem; padding-top: 1.25rem; }
+    .wbk-challenge h3 { margin-bottom: 0.4em; }
+    .wbk-challenge .inline-form__row input { text-transform: uppercase; letter-spacing: 0.06em; }
+    .wbk-result { margin: 1rem 0 0; padding: 0.85rem 1rem; border-radius: var(--radius-md); background: var(--accent-tint); }
+    .wbk-result strong { display: block; }
+
+    .wbk-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.85rem 1rem; margin: 1rem 0 1.25rem; }
+    .wbk-stats dt { font-size: var(--step--1); color: var(--ink-soft); }
+    .wbk-stats dd {
+      margin: 0; font-family: var(--font-display); font-weight: 700;
+      font-size: var(--step-2); line-height: 1.15; font-variant-numeric: tabular-nums;
+    }
+    .wbk-trail-label { font-weight: 700; margin-bottom: 0.4rem; }
+    .wbk-trail {
+      display: block; width: 100%; aspect-ratio: 16 / 10;
+      background: var(--surface-2); border-radius: var(--radius-md);
+      color: var(--accent);
+    }
+
+    /* ---------- Findings ---------- */
+    .wbk-group { margin-top: 1rem; }
+    .wbk-group > p { color: var(--ink-soft); margin-bottom: 0.5rem; }
+    .wbk-rows { list-style: none; margin: 0; padding: 0; }
+    .wbk-row {
+      display: grid; grid-template-columns: minmax(8rem, 13rem) minmax(0, 1fr) auto;
+      gap: 0.2rem 1.25rem; align-items: start;
+      padding: 0.95rem 0; border-top: 1px solid var(--line);
+    }
+    .wbk-row:first-child { border-top: 0; }
+    .wbk-row__label { font-weight: 700; }
+    .wbk-row__value { overflow-wrap: anywhere; }
+    .wbk-row__value.is-unknown { color: var(--ink-soft); font-style: italic; }
+    .wbk-row__why { grid-column: 2; margin: 0; color: var(--ink-soft); font-size: var(--step--1); max-width: 60ch; }
+    .wbk-flag { grid-column: 3; grid-row: 1 / span 2; }
+    .wbk-flag[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+    .wbk-flag[aria-pressed="true"]::before { content: "✓"; }
+    @media (max-width: 640px) {
+      .wbk-row { grid-template-columns: 1fr; }
+      .wbk-row__why { grid-column: 1; }
+      .wbk-flag { grid-column: 1; grid-row: auto; justify-self: start; margin-top: 0.4rem; }
+    }
+
+    /* ---------- Beyond this page ---------- */
+    .wbk-beyond { margin-top: 2.5rem; }
+    .wbk-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+    @media (max-width: 820px) { .wbk-cols { grid-template-columns: 1fr; } }
+    .wbk-cols h3 { margin-bottom: 0.75rem; }
+    .wbk-cols ul { margin: 0; padding-left: 1.2rem; }
+    .wbk-cols li { margin-bottom: 0.65rem; }
+    .wbk-cols li::marker { color: var(--accent); }
+  </style>
+</head>
+
+<body class="cat-literacy" data-tool="browser-knows">
+
+<main id="main" class="page tool-page">
+
+  <header class="tool-intro">
+    <p class="tool-intro__cat"><a href="../../#literacy" data-pl-category-link data-pl="category">Digital literacy</a></p>
+    <h1 data-pl="name">What Your Browser Knows</h1>
+    <p class="lede" data-pl="description">See what any website can learn about you without asking.</p>
+    <dl class="tool-intro__meta">
+      <div><dt>Time</dt><dd data-pl="minutes">5 minutes</dd></div>
+      <div><dt>You leave with</dt><dd data-pl="output">A picture of your digital footprint</dd></div>
+    </dl>
+  </header>
+
+  <section class="tool-steps" aria-labelledby="how-title">
+    <h2 id="how-title">How it works</h2>
+    <ol>
+      <li>Look through what this page has found out about you. None of it is sent anywhere, and it disappears when you close the tab.</li>
+      <li>Mark anything that surprises you.</li>
+      <li>Try the private window challenge to see whether your browser can be recognised without cookies.</li>
+      <li>Answer the reflection questions, then download a summary for your notes.</li>
+    </ol>
+  </section>
+
+  <div id="workspace">
+
+    <div class="wbk-top">
+      <section class="panel" aria-labelledby="fp-title">
+        <h2 id="fp-title">Your browser’s fingerprint</h2>
+        <p>This code combines <span id="trait-count">several</span> details about your device and browser. It isn’t stored anywhere, but any website could work out the same code, and it usually stays the same even after you clear your cookies.</p>
+        <div class="wbk-code-row">
+          <p class="wbk-code" id="fp-code" aria-live="polite">Working…</p>
+          <button class="btn btn--small no-print" type="button" id="copy-code">Copy code</button>
+        </div>
+
+        <div class="wbk-challenge">
+          <h3>Try the private window challenge</h3>
+          <p>Open this page in a private or incognito window, then type the code you see there.</p>
+          <form id="challenge-form" class="no-print">
+            <label for="challenge-input">Code from your private window</label>
+            <div class="inline-form__row">
+              <input id="challenge-input" type="text" autocomplete="off" spellcheck="false" maxlength="12" placeholder="XXXX-XXXX">
+              <button class="btn btn--primary" type="submit">Compare codes</button>
+            </div>
+          </form>
+          <div id="challenge-result" class="wbk-result" role="status" hidden></div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="live-title">
+        <h2 id="live-title">What this page has noticed so far</h2>
+        <p>Since you arrived, this page has been counting what you do. It only counts and forgets, but many websites record far more.</p>
+        <dl class="wbk-stats">
+          <div><dt>Time on this page</dt><dd id="s-time">0:00</dd></div>
+          <div><dt>Pointer movements</dt><dd id="s-moves">0</dd></div>
+          <div><dt>Distance your pointer travelled</dt><dd id="s-dist">0 cm</dd></div>
+          <div><dt>Clicks and taps</dt><dd id="s-clicks">0</dd></div>
+          <div><dt>Keys pressed</dt><dd id="s-keys">0</dd></div>
+          <div><dt>Furthest you’ve scrolled</dt><dd id="s-scroll">0%</dd></div>
+          <div><dt>Times you left this tab</dt><dd id="s-away">0</dd></div>
+        </dl>
+        <p class="wbk-trail-label" id="trail-label">Where your pointer has been on your screen</p>
+        <canvas class="wbk-trail" id="trail" role="img" aria-labelledby="trail-label"></canvas>
+      </section>
+    </div>
+
+    <div id="findings">
+      <section class="panel wbk-group"><p>Gathering details…</p></section>
+    </div>
+
+  </div>
+
+  <section class="wbk-beyond" aria-labelledby="beyond-title">
+    <h2 id="beyond-title">Beyond this page</h2>
+    <div class="wbk-cols">
+      <div class="panel">
+        <h3>What other websites can also see</h3>
+        <ul>
+          <li>Your IP address, which reveals your internet provider and often your town or city.</li>
+          <li>Tracking code from advertising and analytics companies, which can follow you from site to site.</li>
+          <li>Whether you’re logged in to services like Google or Facebook, when their buttons or sign-in tools appear on a page.</li>
+          <li>Session replay tools, which can record every movement, click and scroll on a page, sometimes including what you type before you press send.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>What you can do</h3>
+        <ul>
+          <li>Use a browser with built-in tracking protection, such as Firefox, Safari or Brave, and try its stricter settings.</li>
+          <li>Add a content blocker such as uBlock Origin to stop many trackers from loading.</li>
+          <li>Keep your browser up to date and go easy on unusual add-ons, which can make you stand out more.</li>
+          <li>See how your browser compares with thousands of others at <a href="https://coveryourtracks.eff.org/">Cover Your Tracks</a> or <a href="https://amiunique.org/">AmIUnique</a>.</li>
+          <li>Under the Privacy Act 2020, you can ask any New Zealand organisation what personal information it holds about you. The <a href="https://www.privacy.org.nz/">Office of the Privacy Commissioner</a> explains how.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="tool-actions" aria-label="Save and export">
+    <p class="tool-actions__note">Your marks and reflections save automatically in this browser.</p>
+    <div class="tool-actions__buttons">
+      <button class="btn btn--small" type="button" data-action="summary">Download summary</button>
+      <button class="btn btn--small" type="button" data-action="image">Download image</button>
+      <button class="btn btn--small" type="button" data-action="save">Save a copy</button>
+      <button class="btn btn--small" type="button" data-action="open">Open a copy</button>
+      <button class="btn btn--small" type="button" data-action="print">Print or save as PDF</button>
+      <button class="btn btn--small btn--danger" type="button" data-action="reset">Start over</button>
+    </div>
+  </section>
+
+  <section class="reflect" aria-labelledby="reflect-title">
+    <h2 id="reflect-title">Reflect</h2>
+    <p>Jot down a few thoughts. These save with the rest of your work.</p>
+    <ol>
+      <li>
+        <label for="r1">Which finding surprised you most, and why?</label>
+        <textarea id="r1" data-reflect="surprise"></textarea>
+      </li>
+      <li>
+        <label for="r2">Think of a website or app your organisation runs or relies on. What could it learn about the people using it, and who decides what happens to that information?</label>
+        <textarea id="r2" data-reflect="organisation"></textarea>
+      </li>
+      <li>
+        <label for="r3">Where would you draw the line between helpful personalisation and surveillance?</label>
+        <textarea id="r3" data-reflect="line"></textarea>
+      </li>
+    </ol>
+  </section>
+
+</main>
+
+<script src="../../assets/js/tools.js"></script>
+<script src="../../assets/js/playlab.js"></script>
+
+<script>
+(function () {
+  "use strict";
+
+  var TOOL_ID = "browser-knows";
+  var EMPTY = { surprised: [], challenge: null, reflect: {} };
+  var NOT_SHARED = "Not shared by your browser";
+
+  function fresh() { return JSON.parse(JSON.stringify(EMPTY)); }
+  var store = PlayLab.store(TOOL_ID);
+  var state = Object.assign(fresh(), store.get("state", {}) || {});
+  function save() { store.set("state", state); }
+
+  var esc = PlayLab.escape;
+  var findings = [];      // filled by collect()
+  var fingerprint = "";   // e.g. "7F3A-91C2"
+
+  /* ==================================================================
+     Detection helpers
+     ================================================================== */
+
+  // Fast, non-cryptographic hash (cyrb53) – enough to turn traits into a short code
+  function hash(str) {
+    var h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for (var i = 0, ch; i < str.length; i++) {
+      ch = str.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761);
+      h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (h2 >>> 0).toString(16).padStart(8, "0") + (h1 >>> 0).toString(16).padStart(8, "0");
+  }
+
+  function mq(q) { return !!(window.matchMedia && window.matchMedia(q).matches); }
+
+  function parseUA() {
+    var ua = navigator.userAgent, os = "Unknown", br = "Unknown", m;
+    if (/iPhone/.test(ua)) os = "iOS (iPhone)";
+    else if (/iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) os = "iPadOS";
+    else if (/Android/.test(ua)) os = "Android";
+    else if (/CrOS/.test(ua)) os = "ChromeOS";
+    else if (/Windows/.test(ua)) os = "Windows";
+    else if (/Mac OS X/.test(ua)) os = "macOS";
+    else if (/Linux/.test(ua)) os = "Linux";
+
+    if ((m = ua.match(/Edg(?:A|iOS)?\/(\d+)/))) br = "Microsoft Edge " + m[1];
+    else if ((m = ua.match(/OPR\/(\d+)/))) br = "Opera " + m[1];
+    else if ((m = ua.match(/SamsungBrowser\/(\d+)/))) br = "Samsung Internet " + m[1];
+    else if ((m = ua.match(/(?:Firefox|FxiOS)\/(\d+)/))) br = "Firefox " + m[1];
+    else if ((m = ua.match(/(?:Chrome|CriOS)\/(\d+)/))) br = (navigator.brave ? "Brave (based on Chrome " : "Chrome ") + m[1] + (navigator.brave ? ")" : "");
+    else if ((m = ua.match(/Version\/([\d.]+).*Safari/))) br = "Safari " + m[1];
+    return { os: os, browser: br };
+  }
+
+  function gpu() {
+    try {
+      var c = document.createElement("canvas");
+      var gl = c.getContext("webgl") || c.getContext("experimental-webgl");
+      if (!gl) return null;
+      var ext = gl.getExtension("WEBGL_debug_renderer_info");
+      return (ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER)) || null;
+    } catch (e) { return null; }
+  }
+
+  // Draws hidden text and shapes; tiny rendering differences between devices change the result
+  function canvasPrint() {
+    try {
+      var c = document.createElement("canvas");
+      c.width = 280; c.height = 60;
+      var x = c.getContext("2d");
+      x.textBaseline = "top";
+      x.font = "16px Arial";
+      x.fillStyle = "#f60"; x.fillRect(120, 5, 80, 30);
+      x.fillStyle = "#069"; x.fillText("PlayLab Ōtautahi 🌏 2050", 4, 8);
+      x.fillStyle = "rgba(102, 204, 0, 0.7)"; x.font = "18px Georgia";
+      x.fillText("futures ≠ forecasts", 8, 30);
+      x.globalCompositeOperation = "multiply";
+      x.fillStyle = "rgb(255, 0, 255)";
+      x.beginPath(); x.arc(50, 30, 25, 0, Math.PI * 2); x.fill();
+      return hash(c.toDataURL());
+    } catch (e) { return null; }
+  }
+
+  var FONT_LIST = [
+    "Aptos", "Arial", "Avenir", "Book Antiqua", "Calibri", "Cambria", "Candara", "Century Gothic",
+    "Comic Sans MS", "Consolas", "Constantia", "Corbel", "Courier New", "Franklin Gothic Medium",
+    "Futura", "Garamond", "Georgia", "Gill Sans", "Helvetica", "Helvetica Neue", "Lucida Grande",
+    "Menlo", "Monaco", "Noto Sans", "Open Sans", "Optima", "Palatino", "Roboto", "Segoe UI",
+    "Tahoma", "Times New Roman", "Trebuchet MS", "Ubuntu", "Verdana"
+  ];
+  function detectFonts() {
+    var bases = ["monospace", "sans-serif", "serif"];
+    var s = document.createElement("span");
+    s.textContent = "mmmmmmmmmmlli1WwQ@#&";
+    s.style.cssText = "position:absolute;left:-9999px;top:0;font-size:72px;visibility:hidden;white-space:nowrap;";
+    document.body.appendChild(s);
+    var size = {};
+    bases.forEach(function (b) { s.style.fontFamily = b; size[b] = s.offsetWidth + "x" + s.offsetHeight; });
+    var found = FONT_LIST.filter(function (f) {
+      return bases.some(function (b) {
+        s.style.fontFamily = "'" + f + "', " + b;
+        return (s.offsetWidth + "x" + s.offsetHeight) !== size[b];
+      });
+    });
+    s.remove();
+    return found;
+  }
+
+  function languages() {
+    var list = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language];
+    var names = null;
+    try { names = new Intl.DisplayNames([navigator.language || "en"], { type: "language" }); } catch (e) { /* older browser */ }
+    return list.filter(Boolean).map(function (code) {
+      var name = null;
+      try { name = names && names.of(code); } catch (e) { /* unknown code */ }
+      return name && name !== code ? code + " (" + name + ")" : code;
+    }).join(", ");
+  }
+
+  function utcOffset() {
+    var mins = -new Date().getTimezoneOffset();
+    var sign = mins >= 0 ? "+" : "−";
+    mins = Math.abs(mins);
+    return "UTC" + sign + Math.floor(mins / 60) + (mins % 60 ? ":" + String(mins % 60).padStart(2, "0") : "");
+  }
+
+  function connection() {
+    var c = navigator.connection;
+    if (!c || !c.effectiveType) return null;
+    var speed = { "slow-2g": "Very slow", "2g": "Slow", "3g": "Moderate", "4g": "Fast" }[c.effectiveType] || c.effectiveType;
+    var parts = [speed + " (" + c.effectiveType.toUpperCase() + "-like)"];
+    if (c.downlink) parts.push("about " + c.downlink + " Mbps");
+    if (c.saveData) parts.push("data saver on");
+    return parts.join(", ");
+  }
+
+  function battery() {
+    if (!navigator.getBattery) return Promise.resolve(null);
+    return navigator.getBattery().then(function (b) {
+      return Math.round(b.level * 100) + "%, " + (b.charging ? "charging" : "not charging");
+    }).catch(function () { return null; });
+  }
+
+  /* ==================================================================
+     Collect findings
+     ================================================================== */
+  function collect() {
+    var ua = parseUA();
+    var g = gpu();
+    var fonts = detectFonts();
+    var dm = navigator.deviceMemory;
+    var touch = navigator.maxTouchPoints || 0;
+    var dpr = window.devicePixelRatio || 1;
+    var tz = null;
+    try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) { /* ignore */ }
+    var referrerHost = null;
+    try { referrerHost = document.referrer ? new URL(document.referrer).hostname : null; } catch (e) { /* ignore */ }
+
+    // Traits that make up the fingerprint (stable ones only)
+    var canvasHash = canvasPrint();
+    var traits = [
+      navigator.userAgent, ua.os, screen.width + "x" + screen.height, screen.colorDepth, dpr, touch,
+      navigator.hardwareConcurrency, dm, g, canvasHash, tz, (navigator.languages || []).join(","),
+      fonts.join(","), navigator.platform
+    ];
+    fingerprint = hash(traits.join("|")).slice(0, 8).toUpperCase().replace(/^(.{4})/, "$1-");
+    document.getElementById("trait-count").textContent = traits.length;
+
+    return battery().then(function (bat) {
+      findings = [
+        {
+          id: "device", title: "Your device", intro: "Details your browser hands over about the hardware you’re using.",
+          rows: [
+            { id: "os", label: "Operating system", value: ua.os,
+              why: "Sent with every page you load so sites can tailor what they show. It also narrows down who you are." },
+            { id: "browser", label: "Browser and version", value: ua.browser,
+              why: "Tells sites which features you support. An old version can hint that a device isn’t updated often." },
+            { id: "screen", label: "Screen size", value: screen.width + " × " + screen.height + " pixels",
+              why: "Screen sizes vary a lot, which makes this one of the more identifying details in a fingerprint." },
+            { id: "window", label: "Browser window size", value: window.innerWidth + " × " + window.innerHeight + " pixels",
+              why: "Shows how you arrange your screen. It changes as you resize, which some trackers watch." },
+            { id: "dpr", label: "Pixel density", value: (Math.round(dpr * 100) / 100) + "× (" + (dpr > 1 ? "high-resolution display" : "standard display") + ")",
+              why: "Hints at what kind of device you own. Device type has been used to steer some shoppers towards pricier options." },
+            { id: "touch", label: "Touch screen", value: touch > 0 ? "Yes, up to " + touch + " touch points" : "No",
+              why: "Helps a site guess whether you’re on a phone, tablet or computer." },
+            { id: "cores", label: "Processor cores", value: navigator.hardwareConcurrency ? String(navigator.hardwareConcurrency) : null,
+              why: "Hints at how powerful, and how new, your device is." },
+            { id: "memory", label: "Memory", value: dm ? (dm >= 8 ? "At least 8 GB" : "About " + dm + " GB") : null,
+              why: "Some browsers share a rounded figure. Others, like Firefox and Safari, deliberately keep it to themselves." },
+            { id: "gpu", label: "Graphics chip", value: g,
+              why: "Graphics hardware is surprisingly specific, which makes it a key ingredient in fingerprinting." },
+            { id: "battery", label: "Battery", value: bat,
+              why: "Researchers found battery readings could link visits across websites, so many browsers stopped sharing them." }
+          ]
+        },
+        {
+          id: "place", title: "Where and when", intro: "Clues about where you are, without ever asking for your location.",
+          rows: [
+            { id: "tz", label: "Time zone", value: tz ? tz.replace(/_/g, " ") + " (" + utcOffset() + ")" : null,
+              why: "Narrows down roughly where in the world you are." },
+            { id: "time", label: "Your local time", value: new Date().toLocaleString(undefined, { weekday: "long", hour: "numeric", minute: "2-digit" }),
+              why: "Combined with your activity over time, it can show when you work, sleep and browse." },
+            { id: "langs", label: "Languages", value: languages(),
+              why: "Sites use this to pick a language. Several languages in a particular order can be quite distinctive." },
+            { id: "format", label: "Number and date format", value: (1234567.89).toLocaleString() + " and " + new Date(2050, 0, 31).toLocaleDateString(),
+              why: "Your regional settings say more about where you’re based." },
+            { id: "connection", label: "Connection", value: connection(),
+              why: "Can hint whether you’re on mobile data or broadband, and whether you’re trying to save data." }
+          ]
+        },
+        {
+          id: "settings", title: "Your settings", intro: "Choices you’ve made, or never changed, that also show up.",
+          rows: [
+            { id: "theme", label: "Light or dark mode", value: mq("(prefers-color-scheme: dark)") ? "Dark" : "Light",
+              why: "Small on its own, but every detail adds to your fingerprint." },
+            { id: "motion", label: "Reduced motion", value: mq("(prefers-reduced-motion: reduce)") ? "Turned on" : "Not turned on",
+              why: "Accessibility settings can hint at health or disability information you never chose to share." },
+            { id: "contrast", label: "Higher contrast", value: (mq("(prefers-contrast: more)") || mq("(forced-colors: active)")) ? "Turned on" : "Not turned on",
+              why: "Like reduced motion, this can reveal more about you than you might expect." },
+            { id: "cookies", label: "Cookies", value: navigator.cookieEnabled ? "Allowed" : "Blocked",
+              why: "Cookies let sites remember you between visits. Most tracking still relies on them." },
+            { id: "dnt", label: "Do Not Track signal", value: (navigator.doNotTrack === "1" || window.doNotTrack === "1") ? "Sent" : "Not sent",
+              why: "A polite request not to be tracked. Websites can, and usually do, ignore it." },
+            { id: "gpc", label: "Global Privacy Control", value: navigator.globalPrivacyControl === true ? "Sent" : "Not sent",
+              why: "A newer opt-out signal. Some laws, such as California’s privacy law, require sites to respect it." },
+            { id: "fonts", label: "Installed fonts", value: fonts.length + " of " + FONT_LIST.length + " common fonts found" + (fonts.length ? ": " + fonts.join(", ") : ""),
+              why: "Fonts reflect the software you’ve installed, like Microsoft Office or design tools, and make your browser more distinctive." }
+          ]
+        },
+        {
+          id: "visit", title: "This visit", intro: "What a site learns simply from you arriving.",
+          rows: [
+            { id: "referrer", label: "How you got here", value: referrerHost ? "From " + referrerHost : "Typed in, bookmarked or opened from an app",
+              why: "Sites see the page that sent you, which is how they learn which ads and links work." },
+            { id: "history", label: "Pages visited in this tab", value: String(history.length),
+              why: "Sites can’t see which pages, but they can see how many." }
+          ]
+        }
+      ];
+    });
+  }
+
+  /* ==================================================================
+     Rendering
+     ================================================================== */
+  function renderFindings() {
+    var host = document.getElementById("findings");
+    host.innerHTML = findings.map(function (grp) {
+      return '<section class="panel wbk-group" aria-labelledby="g-' + grp.id + '">' +
+        '<h2 id="g-' + grp.id + '">' + esc(grp.title) + "</h2><p>" + esc(grp.intro) + "</p>" +
+        '<ul class="wbk-rows">' + grp.rows.map(function (r) {
+          var known = r.value != null && r.value !== "";
+          var pressed = state.surprised.indexOf(r.id) !== -1;
+          return '<li class="wbk-row">' +
+            '<span class="wbk-row__label">' + esc(r.label) + "</span>" +
+            '<span class="wbk-row__value' + (known ? "" : " is-unknown") + '">' + esc(known ? r.value : NOT_SHARED) + "</span>" +
+            '<p class="wbk-row__why">' + esc(r.why) + "</p>" +
+            '<button class="btn btn--small wbk-flag no-print" type="button" data-flag="' + r.id + '" aria-pressed="' + pressed + '"' +
+            ' aria-label="Surprised me: ' + esc(r.label) + '">Surprised me</button>' +
+            "</li>";
+        }).join("") + "</ul></section>";
+    }).join("");
+  }
+
+  document.getElementById("findings").addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-flag]");
+    if (!btn) return;
+    var id = btn.dataset.flag;
+    var i = state.surprised.indexOf(id);
+    if (i === -1) state.surprised.push(id); else state.surprised.splice(i, 1);
+    btn.setAttribute("aria-pressed", String(i === -1));
+    save();
+  });
+
+  /* ---------- Fingerprint and challenge ---------- */
+  var codeEl = document.getElementById("fp-code");
+  var resultEl = document.getElementById("challenge-result");
+  var challengeInput = document.getElementById("challenge-input");
+
+  var RESULTS = {
+    match: {
+      title: "It’s a match.",
+      text: "Even in a private window, with no cookies or history, this page recognised your browser. Fingerprinting works without storing anything on your device."
+    },
+    different: {
+      title: "The codes are different.",
+      text: "Your browser changed some details in private mode, which makes you harder to follow. Browsers like Firefox, Safari and Brave add this kind of protection. (If you’re not sure, check you typed the code correctly.)"
+    }
+  };
+  function renderChallenge() {
+    if (!state.challenge) { resultEl.hidden = true; return; }
+    var r = RESULTS[state.challenge];
+    resultEl.innerHTML = "<strong>" + esc(r.title) + "</strong>" + esc(r.text);
+    resultEl.hidden = false;
+  }
+
+  function normalise(code) { return String(code).toUpperCase().replace(/[^0-9A-F]/g, ""); }
+
+  document.getElementById("challenge-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var typed = normalise(challengeInput.value);
+    if (typed.length !== 8) {
+      PlayLab.toast("Codes have 8 letters and numbers, like 7F3A-91C2");
+      challengeInput.focus();
+      return;
+    }
+    state.challenge = typed === normalise(fingerprint) ? "match" : "different";
+    save();
+    renderChallenge();
+  });
+
+  document.getElementById("copy-code").addEventListener("click", function () {
+    if (!navigator.clipboard) { PlayLab.toast("Copying isn’t available here. Write the code down instead"); return; }
+    navigator.clipboard.writeText(fingerprint).then(
+      function () { PlayLab.toast("Code copied"); },
+      function () { PlayLab.toast("Copying didn’t work. Write the code down instead"); }
+    );
+  });
+
+  /* ---------- Live tracker ---------- */
+  var start = Date.now();
+  var stats = { moves: 0, dist: 0, clicks: 0, keys: 0, scroll: 0, away: 0 };
+  var points = [];
+  var last = null;
+  var dirty = true;
+  var $ = function (id) { return document.getElementById(id); };
+  var canvas = $("trail");
+  var ctx = canvas.getContext("2d");
+
+  document.addEventListener("pointermove", function (e) {
+    stats.moves++;
+    if (last) stats.dist += Math.hypot(e.clientX - last.x, e.clientY - last.y);
+    last = { x: e.clientX, y: e.clientY };
+    if (points.length < 4000) points.push([e.clientX / window.innerWidth, e.clientY / window.innerHeight]);
+    dirty = true;
+  }, { passive: true });
+  document.addEventListener("pointerdown", function () { stats.clicks++; dirty = true; });
+  document.addEventListener("keydown", function () { stats.keys++; dirty = true; });
+  function trackScroll() {
+    var max = document.documentElement.scrollHeight;
+    var pct = Math.min(100, Math.round(((window.scrollY + window.innerHeight) / max) * 100));
+    if (pct > stats.scroll) { stats.scroll = pct; dirty = true; }
+  }
+  window.addEventListener("scroll", trackScroll, { passive: true });
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) { stats.away++; dirty = true; }
+  });
+
+  function fmtDistance(px) {
+    var cm = px / 37.8; // 96 CSS pixels per inch
+    return cm < 100 ? Math.round(cm) + " cm" : (cm / 100).toFixed(1) + " m";
+  }
+  function fmtTime(ms) {
+    var s = Math.floor(ms / 1000);
+    return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+  }
+
+  function sizeCanvas() {
+    var r = canvas.getBoundingClientRect();
+    var dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.round(r.width * dpr));
+    canvas.height = Math.max(1, Math.round(r.height * dpr));
+    dirty = true;
+  }
+  function drawTrail() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = getComputedStyle(canvas).color;
+    ctx.globalAlpha = 0.35;
+    var rad = Math.max(1.5, canvas.width / 260);
+    points.forEach(function (p) {
+      ctx.beginPath();
+      ctx.arc(p[0] * canvas.width, p[1] * canvas.height, rad, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  function tick() {
+    $("s-time").textContent = fmtTime(Date.now() - start);
+    if (dirty) {
+      $("s-moves").textContent = stats.moves.toLocaleString();
+      $("s-dist").textContent = fmtDistance(stats.dist);
+      $("s-clicks").textContent = stats.clicks.toLocaleString();
+      $("s-keys").textContent = stats.keys.toLocaleString();
+      $("s-scroll").textContent = stats.scroll + "%";
+      $("s-away").textContent = stats.away;
+      drawTrail();
+      dirty = false;
+    }
+  }
+  setInterval(tick, 500);
+  window.addEventListener("resize", sizeCanvas);
+  // Redraw in the new colour when the theme changes
+  new MutationObserver(function () { dirty = true; }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  /* ---------- Reflections ---------- */
+  var reflectFields = document.querySelectorAll("[data-reflect]");
+  function renderReflect() {
+    reflectFields.forEach(function (f) { f.value = state.reflect[f.dataset.reflect] || ""; });
+  }
+  reflectFields.forEach(function (f) {
+    f.addEventListener("input", function () { state.reflect[f.dataset.reflect] = f.value; save(); });
+  });
+
+  /* ==================================================================
+     Save and export
+     ================================================================== */
+  function summary() {
+    var lines = [
+      "# What Your Browser Knows",
+      "",
+      "Futures PlayLab, academyEX. Created " + new Date().toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }) + ".",
+      "",
+      "## Fingerprint",
+      "",
+      "Code: " + fingerprint,
+      "",
+      state.challenge ? "Private window challenge: " + RESULTS[state.challenge].title + " " + RESULTS[state.challenge].text : "Private window challenge: not tried yet.",
+      "",
+      "## What this page noticed during the visit",
+      "",
+      "- Time on page: " + fmtTime(Date.now() - start),
+      "- Pointer movements: " + stats.moves + " (" + fmtDistance(stats.dist) + ")",
+      "- Clicks and taps: " + stats.clicks,
+      "- Keys pressed: " + stats.keys,
+      "- Times left the tab: " + stats.away,
+      ""
+    ];
+    findings.forEach(function (grp) {
+      lines.push("## " + grp.title, "");
+      grp.rows.forEach(function (r) {
+        var flag = state.surprised.indexOf(r.id) !== -1 ? " **(surprised me)**" : "";
+        lines.push("- **" + r.label + ":** " + (r.value || NOT_SHARED) + flag);
+      });
+      lines.push("");
+    });
+    var qs = [
+      ["surprise", "Which finding surprised you most, and why?"],
+      ["organisation", "What could a website or app your organisation runs or relies on learn about the people using it, and who decides what happens to that information?"],
+      ["line", "Where would you draw the line between helpful personalisation and surveillance?"]
+    ];
+    lines.push("## Reflections", "");
+    qs.forEach(function (q) {
+      lines.push("**" + q[1] + "**", "", (state.reflect[q[0]] || "").trim() || "_No answer yet._", "");
+    });
+    return lines.join("\n");
+  }
+
+  var actions = {
+    summary: function () {
+      PlayLab.export.markdown(PlayLab.export.filename(TOOL_ID + "-summary", "md"), summary());
+      PlayLab.toast("Summary downloaded");
+    },
+    image: function () {
+      PlayLab.export.elementToPNG(document.getElementById("workspace"), PlayLab.export.filename(TOOL_ID, "png"))
+        .then(function () { PlayLab.toast("Image downloaded"); })
+        .catch(function (err) { PlayLab.toast(err.message); });
+    },
+    save: function () {
+      PlayLab.export.saveFile(TOOL_ID, state);
+      PlayLab.toast("Copy saved to your downloads");
+    },
+    open: function () {
+      PlayLab.export.openSaveFile(TOOL_ID).then(function (data) {
+        state = Object.assign(fresh(), data);
+        save(); renderAll();
+        PlayLab.toast("Copy opened");
+      }).catch(function (err) {
+        if (err.message !== "cancelled") PlayLab.toast(err.message);
+      });
+    },
+    print: function () { PlayLab.export.print(); },
+    reset: function () {
+      if (!confirm("Start over? This clears your marks, challenge result and reflections from this browser. Save a copy first if you want to keep them.")) return;
+      store.clear();
+      state = fresh();
+      challengeInput.value = "";
+      renderAll();
+      PlayLab.toast("Cleared. Ready for a fresh start");
+    }
+  };
+  document.querySelectorAll("[data-action]").forEach(function (btn) {
+    btn.addEventListener("click", function () { actions[btn.dataset.action](); });
+  });
+
+  /* ==================================================================
+     Start
+     ================================================================== */
+  function renderAll() {
+    renderFindings();
+    renderChallenge();
+    renderReflect();
+  }
+
+  collect().then(function () {
+    codeEl.textContent = fingerprint;
+    renderAll();
+    trackScroll();
+  });
+  renderReflect();
+  sizeCanvas();
+  trackScroll();
+  tick();
+})();
+</script>
+</body>
+</html>

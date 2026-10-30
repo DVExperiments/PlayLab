@@ -139,7 +139,7 @@ window.PLAYLAB_TOOLS = {
       description: "See what any website can learn about you without asking.",
       minutes: 5,
       output: "A picture of your digital footprint",
-      status: "planned"
+      status: "live"
     },
     {
       id: "feed-sandbox",
