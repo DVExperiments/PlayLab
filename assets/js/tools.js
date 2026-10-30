@@ -52,10 +52,10 @@ window.PLAYLAB_TOOLS = {
       category: "futures",
       name: "Futures Cone Sorter",
       path: "futures/futures-cone/",
-      description: "Sort scenarios into probable, plausible, possible and preferable, then question why you put them there.",
+      description: "Sort scenarios by how likely they seem, mark the ones you’d want, and question why.",
       minutes: 10,
       output: "A sorted set of scenarios",
-      status: "planned"
+      status: "live"
     },
     {
       id: "signal-collider",
@@ -95,9 +95,9 @@ window.PLAYLAB_TOOLS = {
       name: "How Might We Reframer",
       path: "design/hmw-reframer/",
       description: "Turn one problem statement into many by stretching, shrinking and flipping it.",
-      minutes: 10,
-      output: "A list of reframed questions",
-      status: "planned"
+      minutes: 15,
+      output: "A shortlist of reframed questions",
+      status: "live"
     },
     {
       id: "assumption-mapper",

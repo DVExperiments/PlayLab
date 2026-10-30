@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="en-NZ">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Futures Cone Sorter | Futures PlayLab</title>
+  <meta name="description" content="Sort scenarios into probable, plausible, possible and preposterous, mark the ones you’d want, and question why.">
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/css/playlab.css">
+  <script>try{var t=localStorage.getItem("playlab:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+  <style>
+    .fc-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+    .fc-view { position: sticky; top: 5.5rem; }
+    @media (max-width: 960px) { .fc-layout { grid-template-columns: minmax(0, 1fr); } .fc-view { position: static; } }
+    .fc-sort h2, .fc-view h2 { font-size: var(--step-2); }
+
+    .fc-packs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.4rem 0 0; }
+    .fc-packs [aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+
+    .fc-list { list-style: none; margin: 1.25rem 0 0; padding: 0; display: grid; gap: 0.75rem; }
+    .fc-item { padding: 0.9rem 1rem; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-md); }
+    .fc-item.is-placed { border-left: 5px solid var(--accent); }
+    .fc-item__top { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0.75rem; align-items: start; }
+    .fc-num {
+      display: inline-grid; place-items: center; width: 2rem; height: 2rem; border-radius: 999px;
+      background: var(--surface-2); font-weight: 700; font-variant-numeric: tabular-nums;
+    }
+    .fc-item.is-placed .fc-num { background: var(--accent); color: var(--on-accent); }
+    .fc-item.is-pref .fc-num { box-shadow: 0 0 0 3px var(--surface), 0 0 0 6px var(--design); }
+    .fc-text { margin: 0.2rem 0 0; font-weight: 700; line-height: 1.35; }
+    .fc-zones { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.75rem; }
+    .fc-zones button {
+      font: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer;
+      min-height: 36px; padding: 0.2rem 0.75rem; border-radius: 999px;
+      border: 1.5px solid var(--line); background: var(--surface); color: var(--ink);
+    }
+    .fc-zones button:hover { border-color: var(--ink); }
+    .fc-zones button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+    .fc-item__more { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.6rem; align-items: center; margin-top: 0.6rem; }
+    @media (max-width: 560px) { .fc-item__more { grid-template-columns: minmax(0, 1fr); } }
+    .fc-pref[aria-pressed="true"] { background: var(--design); border-color: var(--design); color: var(--on-accent); }
+    .fc-pref[aria-pressed="true"]::before { content: "★ "; }
+    .fc-why { min-height: 0; height: 2.75rem; padding: 0.5rem 0.7rem; font-size: 0.95rem; }
+    .fc-why:focus { height: 5rem; }
+
+    .fc-zone-key { display: grid; gap: 0.35rem; margin: 1rem 0 0; font-size: var(--step--1); }
+    .fc-zone-key div { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: 0.5rem; }
+    .fc-zone-key dt { font-weight: 700; }
+    .fc-zone-key dd { margin: 0; color: var(--ink-soft); }
+
+    .fc-own { margin-top: 1.25rem; }
+
+    /* Cone drawing */
+    .fc-svg { display: block; width: 100%; height: auto; color: var(--futures); }
+    .fc-band { fill: currentColor; stroke: currentColor; stroke-width: 1.5; }
+    .fc-band--preposterous { fill: none; stroke: var(--ink-soft); stroke-dasharray: 5 5; stroke-opacity: 0.6; }
+    .fc-band--possible  { fill-opacity: 0.07; stroke-opacity: 0.35; }
+    .fc-band--plausible { fill-opacity: 0.13; stroke-opacity: 0.5; }
+    .fc-band--probable  { fill-opacity: 0.24; stroke-opacity: 0.8; }
+    .fc-svg text { font-family: var(--font-body); font-size: 14px; fill: var(--ink-soft); }
+    .fc-svg .fc-zone-label { font-weight: 700; fill: var(--ink); }
+    .fc-now { fill: var(--ink); }
+    .fc-marker circle { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+    .fc-marker.is-pref circle.fc-ring { fill: none; stroke: var(--design); stroke-width: 3.5; }
+    .fc-svg .fc-marker text { fill: var(--on-accent); font-weight: 700; font-size: 13px; }
+    .fc-marker { cursor: pointer; }
+    .fc-marker:focus { outline: none; }
+    .fc-marker:focus-visible circle:first-child, .fc-marker:hover circle:first-child { stroke: var(--ink); stroke-width: 3; }
+
+    .fc-pattern { margin-top: 1rem; display: grid; gap: 0.5rem; }
+    .fc-pattern p { margin: 0; }
+    .fc-legend { margin: 1rem 0 0; padding-left: 1.5rem; font-size: var(--step--1); color: var(--ink-soft); display: none; }
+    .fc-item.is-flash { box-shadow: 0 0 0 3px var(--accent); }
+
+    @media print {
+      .fc-sort { display: none; }
+      .fc-layout { display: block; }
+      .fc-view { position: static; }
+      .fc-legend { display: block; }
+    }
+  </style>
+</head>
+
+<body class="cat-futures" data-tool="futures-cone">
+
+<main id="main" class="page tool-page">
+
+  <header class="tool-intro">
+    <p class="tool-intro__cat"><a href="../../#futures" data-pl-category-link data-pl="category">Futures thinking</a></p>
+    <h1 data-pl="name">Futures Cone Sorter</h1>
+    <p class="lede" data-pl="description">Sort scenarios by how likely they seem, mark the ones you’d want, and question why.</p>
+    <dl class="tool-intro__meta">
+      <div><dt>Time</dt><dd data-pl="minutes">10 minutes</dd></div>
+      <div><dt>You leave with</dt><dd data-pl="output">A sorted set of scenarios</dd></div>
+    </dl>
+  </header>
+
+  <section class="tool-steps" aria-labelledby="how-title">
+    <h2 id="how-title">How it works</h2>
+    <ol>
+      <li>Choose a set of scenarios, or add your own.</li>
+      <li>Place each one in the cone depending on how likely it seems by 2040, and note why.</li>
+      <li>Star the scenarios you’d want to happen. These are your preferable futures, and they can sit anywhere in the cone.</li>
+      <li>Look at the pattern you’ve made, then reflect on what it says about your assumptions.</li>
+    </ol>
+  </section>
+
+  <div class="fc-layout">
+
+    <section class="panel fc-sort" aria-labelledby="sort-title">
+      <h2 id="sort-title">Sort the scenarios</h2>
+      <p class="label" id="packs-label">Choose a set of scenarios</p>
+      <div class="fc-packs" id="packs" role="group" aria-labelledby="packs-label"></div>
+
+      <dl class="fc-zone-key" id="zone-key"></dl>
+
+      <ol class="fc-list" id="list" aria-label="Scenarios"></ol>
+
+      <form class="fc-own" id="own-form">
+        <label for="own-input">Add your own scenario</label>
+        <div class="inline-form__row">
+          <input id="own-input" type="text" maxlength="120" autocomplete="off" placeholder="For example, most of our customers talk to an AI instead of our staff">
+          <button class="btn" type="submit">Add scenario</button>
+        </div>
+        <p class="hint">Something from your own sector works well. Imagine it’s true by 2040.</p>
+      </form>
+    </section>
+
+    <section class="panel fc-view" id="workspace" aria-labelledby="view-title">
+      <h2 id="view-title">Your futures cone</h2>
+      <p id="view-sub">By 2040. Each number is a scenario. Ringed numbers are ones you’d want.</p>
+      <div id="cone"></div>
+      <div class="fc-pattern" id="pattern" aria-live="polite"></div>
+      <ol class="fc-legend" id="legend"></ol>
+    </section>
+
+  </div>
+
+  <section class="tool-actions" aria-label="Save and export">
+    <p class="tool-actions__note">Your work saves automatically in this browser.</p>
+    <div class="tool-actions__buttons">
+      <button class="btn btn--small" type="button" data-action="image">Download image</button>
+      <button class="btn btn--small" type="button" data-action="summary">Download summary</button>
+      <button class="btn btn--small" type="button" data-action="save">Save a copy</button>
+      <button class="btn btn--small" type="button" data-action="open">Open a copy</button>
+      <button class="btn btn--small" type="button" data-action="print">Print or save as PDF</button>
+      <button class="btn btn--small btn--danger" type="button" data-action="reset">Start over</button>
+    </div>
+  </section>
+
+  <section class="reflect" aria-labelledby="reflect-title">
+    <h2 id="reflect-title">Reflect</h2>
+    <p>Jot down a few thoughts. These save with the rest of your work.</p>
+    <ol>
+      <li>
+        <label for="r1">Which scenarios were hardest to place? What does that tell you about your assumptions?</label>
+        <textarea id="r1" data-reflect="hardest"></textarea>
+      </li>
+      <li>
+        <label for="r2">Where do your preferable futures sit? If they aren’t probable, what would need to change to make them more likely?</label>
+        <textarea id="r2" data-reflect="preferable"></textarea>
+      </li>
+      <li>
+        <label for="r3">Compare your cone with a classmate’s. Where did you disagree, and what experiences might explain the difference?</label>
+        <textarea id="r3" data-reflect="compare"></textarea>
+      </li>
+    </ol>
+  </section>
+
+</main>
+
+<script src="../../assets/js/tools.js"></script>
+<script src="../../assets/js/playlab.js"></script>
+
+<script>
+(function () {
+  "use strict";
+
+  var TOOL_ID = "futures-cone";
+
+  var ZONES = [
+    { id: "probable", name: "Probable", desc: "Likely, if current trends continue." },
+    { id: "plausible", name: "Plausible", desc: "Could happen, based on what we know today." },
+    { id: "possible", name: "Possible", desc: "Might happen, but needs knowledge or changes we don’t have yet." },
+    { id: "preposterous", name: "Preposterous", desc: "Seems impossible today. So did plenty of things that now exist." }
+  ];
+
+  var PACKS = [
+    { id: "work", name: "Work", items: [
+      "Most routine office admin is done by AI agents.",
+      "A four-day working week is standard in Aotearoa.",
+      "Most people work for more than one employer at a time.",
+      "Many people report to an AI manager.",
+      "A universal basic income replaces most benefits.",
+      "Most city office buildings have been converted into housing.",
+      "Retiring at 75 is normal.",
+      "Workplaces are required by law to employ a set number of humans."
+    ] },
+    { id: "health", name: "Health", items: [
+      "Most first GP appointments are with an AI before a person.",
+      "Every baby’s genome is sequenced at birth.",
+      "Wearables routinely detect illness before you feel sick.",
+      "Average life expectancy in New Zealand passes 90.",
+      "Lab-grown organs are used for most transplants.",
+      "Rongoā Māori is publicly funded alongside other health care.",
+      "Robots handle most hospital work overnight.",
+      "A daily pill slows ageing."
+    ] },
+    { id: "places", name: "Cities and places", items: [
+      "Most new cars sold in New Zealand are electric.",
+      "Driverless buses run in every main centre.",
+      "Some coastal suburbs have been moved inland.",
+      "Auckland’s population passes 2.5 million.",
+      "Most food eaten in our cities is grown within 50 km.",
+      "Electric air taxis are a normal way to travel between cities.",
+      "Private cars are banned from city centres.",
+      "People live in floating neighbourhoods on the harbour."
+    ] }
+  ];
+
+  var EMPTY = { pack: "work", items: null, reflect: {} };
+  function fresh() { return JSON.parse(JSON.stringify(EMPTY)); }
+  function itemsFor(packId) {
+    var p = PACKS.find(function (x) { return x.id === packId; }) || PACKS[0];
+    return p.items.map(function (text, i) { return { id: packId + i, text: text, zone: "", pref: false, why: "", own: false }; });
+  }
+  var store = PlayLab.store(TOOL_ID);
+  var state = Object.assign(fresh(), store.get("state", {}) || {});
+  if (!state.items) state.items = itemsFor(state.pack);
+  function save() { store.set("state", state); }
+
+  var esc = PlayLab.escape;
+  var $ = function (id) { return document.getElementById(id); };
+  function zone(id) { return ZONES.find(function (z) { return z.id === id; }); }
+
+  /* ==================================================================
+     Sorting panel
+     ================================================================== */
+  function renderPacks() {
+    $("packs").innerHTML = PACKS.map(function (p) {
+      return '<button class="btn btn--small" type="button" data-pack="' + p.id + '" aria-pressed="' + (state.pack === p.id) + '">' + esc(p.name) + "</button>";
+    }).join("");
+    $("zone-key").innerHTML = ZONES.map(function (z) {
+      return "<div><dt>" + esc(z.name) + "</dt><dd>" + esc(z.desc) + "</dd></div>";
+    }).join("");
+  }
+  $("packs").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-pack]");
+    if (!b || b.dataset.pack === state.pack) return;
+    var started = state.items.some(function (it) { return it.zone || it.pref || it.why; });
+    if (started && !confirm("Switch to a different set? Your placements for this set will be cleared. Your own scenarios stay.")) return;
+    var own = state.items.filter(function (it) { return it.own; });
+    state.pack = b.dataset.pack;
+    state.items = itemsFor(state.pack).concat(own);
+    save(); renderPacks(); renderList(); renderCone();
+  });
+
+  function itemHTML(it, n) {
+    var zones = ZONES.map(function (z) {
+      return '<button type="button" data-zone="' + z.id + '" aria-pressed="' + (it.zone === z.id) + '">' + esc(z.name) + "</button>";
+    }).join("");
+    return '<li class="fc-item' + (it.zone ? " is-placed" : "") + (it.pref ? " is-pref" : "") + '" data-id="' + it.id + '" id="item-' + it.id + '">' +
+      '<div class="fc-item__top">' +
+        '<span class="fc-num" aria-hidden="true">' + n + "</span>" +
+        '<p class="fc-text"><span class="visually-hidden">Scenario ' + n + ": </span>" + esc(it.text) + "</p>" +
+        (it.own ? '<button class="btn btn--quiet btn--small" type="button" data-remove aria-label="Remove scenario ' + n + '">Remove</button>' : "<span></span>") +
+      "</div>" +
+      '<div class="fc-zones" role="group" aria-label="How likely is scenario ' + n + '?">' + zones + "</div>" +
+      '<div class="fc-item__more">' +
+        '<button class="btn btn--small fc-pref" type="button" data-pref aria-pressed="' + it.pref + '">I’d want this</button>' +
+        '<label class="visually-hidden" for="why-' + it.id + '">Why did you place scenario ' + n + " there?</label>" +
+        '<textarea class="fc-why" id="why-' + it.id + '" maxlength="300" placeholder="Why there? (optional)">' + esc(it.why) + "</textarea>" +
+      "</div></li>";
+  }
+  function renderList() {
+    $("list").innerHTML = state.items.map(function (it, i) { return itemHTML(it, i + 1); }).join("");
+  }
+
+  $("list").addEventListener("click", function (e) {
+    var li = e.target.closest("[data-id]");
+    if (!li) return;
+    var it = state.items.find(function (x) { return x.id === li.dataset.id; });
+    var z = e.target.closest("[data-zone]");
+    if (z) {
+      it.zone = it.zone === z.dataset.zone ? "" : z.dataset.zone;
+      li.querySelectorAll("[data-zone]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.zone === it.zone)); });
+      li.classList.toggle("is-placed", !!it.zone);
+      save(); renderCone();
+    }
+    if (e.target.closest("[data-pref]")) {
+      it.pref = !it.pref;
+      e.target.closest("[data-pref]").setAttribute("aria-pressed", String(it.pref));
+      li.classList.toggle("is-pref", it.pref);
+      save(); renderCone();
+    }
+    if (e.target.closest("[data-remove]")) {
+      if ((it.zone || it.why) && !confirm("Remove this scenario?")) return;
+      state.items = state.items.filter(function (x) { return x !== it; });
+      save(); renderList(); renderCone();
+      $("own-input").focus();
+    }
+  });
+  $("list").addEventListener("input", function (e) {
+    if (!e.target.classList.contains("fc-why")) return;
+    var it = state.items.find(function (x) { return x.id === e.target.closest("[data-id]").dataset.id; });
+    it.why = e.target.value;
+    save();
+  });
+
+  $("own-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var input = $("own-input"), v = input.value.trim();
+    if (!v) { PlayLab.toast("Type a scenario first"); input.focus(); return; }
+    if (state.items.length >= 16) { PlayLab.toast("That’s 16 scenarios, the most the cone can show clearly"); return; }
+    if (!/[.!?]$/.test(v)) v += ".";
+    var it = { id: "own" + Date.now().toString(36), text: v.charAt(0).toUpperCase() + v.slice(1), zone: "", pref: false, why: "", own: true };
+    state.items.push(it);
+    input.value = "";
+    save(); renderList(); renderCone();
+    var added = $("item-" + it.id);
+    added.querySelector("[data-zone]").focus();
+    PlayLab.toast("Added. Now place it in the cone");
+  });
+
+  /* ==================================================================
+     The cone
+     ================================================================== */
+  // The cone opens from "now" at (OX, OY) to x = END. Half-heights at the open end:
+  var OX = 44, OY = 210, END = 560;
+  var HALF = { probable: 52, plausible: 108, possible: 164, preposterous: 200 };
+  var INNER = { probable: 0, plausible: 52, possible: 108, preposterous: 164 };
+  function at(h, x) { return h * (x - OX) / (END - OX); }
+
+  function band(h, cls) {
+    return '<path class="fc-band fc-band--' + cls + '" d="M' + OX + " " + OY + " L" + END + " " + (OY - h) +
+      " Q" + (END + h * 0.14) + " " + OY + " " + END + " " + (OY + h) + ' Z"/>';
+  }
+
+  function renderCone() {
+    var placed = {}, numbers = {};
+    state.items.forEach(function (it, i) {
+      numbers[it.id] = i + 1;
+      if (it.zone) (placed[it.zone] = placed[it.zone] || []).push(it);
+    });
+
+    var markers = "";
+    ZONES.forEach(function (z, zi) {
+      var list = placed[z.id] || [];
+      // Each zone uses a slightly different stretch of the cone so markers don't line up
+      var start = 280 + zi * 22, end = 535 - (3 - zi) * 10;
+      list.forEach(function (it, i) {
+        var x = list.length === 1 ? 360 + zi * 40 : start + ((end - start) * i) / (list.length - 1);
+        var mid = (at(INNER[z.id], x) + at(HALF[z.id], x)) / 2;
+        if (z.id === "probable") mid = at(HALF.probable, x) * 0.45;
+        var y = OY + (i % 2 === 0 ? -mid : mid);
+        var n = numbers[it.id];
+        markers += '<g class="fc-marker' + (it.pref ? " is-pref" : "") + '" data-id="' + it.id + '" tabindex="0" role="button"' +
+          ' aria-label="Scenario ' + n + ", " + esc(z.name.toLowerCase()) + (it.pref ? ", preferable" : "") + '. Select to go to it."' +
+          ' transform="translate(' + x.toFixed(1) + " " + y.toFixed(1) + ')">' +
+          '<circle r="12"/>' + (it.pref ? '<circle class="fc-ring" r="16"/>' : "") +
+          '<text text-anchor="middle" y="4.5">' + n + "</text></g>";
+      });
+    });
+
+    var labels =
+      '<text class="fc-zone-label" x="' + (END + 34) + '" y="' + (OY + 5) + '">Probable</text>' +
+      '<text class="fc-zone-label" x="' + (END + 34) + '" y="' + (OY - 76) + '">Plausible</text>' +
+      '<text class="fc-zone-label" x="' + (END + 30) + '" y="' + (OY - 134) + '">Possible</text>' +
+      '<text class="fc-zone-label" x="' + (END + 14) + '" y="' + (OY - 186) + '">Preposterous</text>';
+
+    $("cone").innerHTML =
+      '<svg class="fc-svg" viewBox="0 0 700 430" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="cone-t cone-d">' +
+      '<title id="cone-t">Your futures cone</title>' +
+      '<desc id="cone-d">' + esc(describe()) + "</desc>" +
+      band(HALF.preposterous, "preposterous") + band(HALF.possible, "possible") + band(HALF.plausible, "plausible") + band(HALF.probable, "probable") +
+      '<circle class="fc-now" cx="' + OX + '" cy="' + OY + '" r="6"/>' +
+      '<text x="' + OX + '" y="' + (OY + 30) + '" text-anchor="middle">Now</text>' +
+      '<text x="' + END + '" y="' + (OY + 218) + '" text-anchor="end">2040</text>' +
+      labels + markers + "</svg>";
+
+    renderPattern();
+    $("legend").innerHTML = state.items.map(function (it) {
+      return "<li>" + esc(it.text) + (it.zone ? " (" + zone(it.zone).name.toLowerCase() + ")" : " (not placed)") + (it.pref ? " ★" : "") + "</li>";
+    }).join("");
+  }
+
+  function describe() {
+    var parts = ZONES.map(function (z) {
+      var n = state.items.filter(function (it) { return it.zone === z.id; }).length;
+      return n + " " + z.name.toLowerCase();
+    });
+    return "Scenarios placed: " + parts.join(", ") + ".";
+  }
+
+  function renderPattern() {
+    var total = state.items.length;
+    var placedCount = state.items.filter(function (it) { return it.zone; }).length;
+    var prefs = state.items.filter(function (it) { return it.pref; });
+    var prefProbable = prefs.filter(function (it) { return it.zone === "probable"; }).length;
+    var counts = ZONES.map(function (z) {
+      return { z: z, n: state.items.filter(function (it) { return it.zone === z.id; }).length };
+    });
+    var out = [];
+    out.push("<p><strong>" + placedCount + " of " + total + "</strong> scenarios placed" +
+      (placedCount ? ": " + counts.filter(function (c) { return c.n; }).map(function (c) { return c.n + " " + c.z.name.toLowerCase(); }).join(", ") : "") + ".</p>");
+    if (prefs.length) {
+      var unplacedPrefs = prefs.filter(function (it) { return !it.zone; }).length;
+      var msg = "<p><strong>" + prefs.length + "</strong> you’d want, ";
+      msg += prefProbable === prefs.length ? "and all of them are probable. You’re fairly optimistic about where things are heading." :
+        prefProbable === 0 ? "and none of them are probable. The futures you want may need people to act to bring them about." :
+        "and " + prefProbable + " of them " + (prefProbable === 1 ? "is" : "are") + " probable. The rest may need someone to make them happen.";
+      if (unplacedPrefs) msg = "<p><strong>" + prefs.length + "</strong> you’d want. Place " + (unplacedPrefs === 1 ? "it" : "them") + " in the cone to see the pattern.";
+      out.push(msg + "</p>");
+    }
+    if (placedCount === total && total) out.push("<p>Everything’s placed. Now look at the shape: where did most scenarios land, and why?</p>");
+    $("pattern").innerHTML = out.join("");
+  }
+
+  // Selecting a number on the cone jumps to that scenario
+  function activate(g) {
+    var li = $("item-" + g.dataset.id);
+    if (!li) return;
+    li.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    li.querySelector("[data-zone]").focus({ preventScroll: true });
+    li.classList.add("is-flash");
+    setTimeout(function () { li.classList.remove("is-flash"); }, 1200);
+  }
+  $("cone").addEventListener("click", function (e) { var g = e.target.closest("[data-id]"); if (g) activate(g); });
+  $("cone").addEventListener("keydown", function (e) {
+    var g = e.target.closest("[data-id]");
+    if (g && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); activate(g); }
+  });
+
+  /* ---------- Reflections ---------- */
+  var reflectFields = document.querySelectorAll("[data-reflect]");
+  function renderReflect() { reflectFields.forEach(function (f) { f.value = state.reflect[f.dataset.reflect] || ""; }); }
+  reflectFields.forEach(function (f) {
+    f.addEventListener("input", function () { state.reflect[f.dataset.reflect] = f.value; save(); });
+  });
+
+  /* ==================================================================
+     Save and export
+     ================================================================== */
+  function summary() {
+    var pack = PACKS.find(function (p) { return p.id === state.pack; });
+    var lines = [
+      "# Futures Cone Sorter",
+      "",
+      "Futures PlayLab, academyEX. Created " + new Date().toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }) + ".",
+      "",
+      "Scenario set: " + (pack ? pack.name : "Your own") + ". Horizon: 2040.",
+      ""
+    ];
+    ZONES.concat([{ id: "", name: "Not placed yet" }]).forEach(function (z) {
+      var list = state.items.filter(function (it) { return it.zone === z.id; });
+      if (!list.length) return;
+      lines.push("## " + z.name, "");
+      list.forEach(function (it) {
+        lines.push("- " + it.text + (it.pref ? " ★ _(I’d want this)_" : "") + (it.why.trim() ? "  \n  Why: " + it.why.trim() : ""));
+      });
+      lines.push("");
+    });
+    lines.push("## Reflections", "");
+    document.querySelectorAll(".reflect label").forEach(function (lab) {
+      var key = $(lab.htmlFor).dataset.reflect;
+      lines.push("**" + lab.textContent + "**", "", (state.reflect[key] || "").trim() || "_No answer yet._", "");
+    });
+    return lines.join("\n");
+  }
+
+  var actions = {
+    image: function () {
+      var legend = $("legend");
+      legend.style.display = "block";   // include the numbered key in the image
+      PlayLab.export.elementToPNG($("workspace"), PlayLab.export.filename(TOOL_ID, "png"))
+        .then(function () { PlayLab.toast("Image downloaded"); })
+        .catch(function (err) { PlayLab.toast(err.message); })
+        .then(function () { legend.style.display = ""; });
+    },
+    summary: function () {
+      PlayLab.export.markdown(PlayLab.export.filename(TOOL_ID + "-summary", "md"), summary());
+      PlayLab.toast("Summary downloaded");
+    },
+    save: function () {
+      PlayLab.export.saveFile(TOOL_ID, state);
+      PlayLab.toast("Copy saved to your downloads");
+    },
+    open: function () {
+      PlayLab.export.openSaveFile(TOOL_ID).then(function (data) {
+        state = Object.assign(fresh(), data);
+        if (!state.items) state.items = itemsFor(state.pack);
+        save(); renderAll();
+        PlayLab.toast("Copy opened");
+      }).catch(function (err) {
+        if (err.message !== "cancelled") PlayLab.toast(err.message);
+      });
+    },
+    print: function () { PlayLab.export.print(); },
+    reset: function () {
+      if (!confirm("Start over? This clears your placements, own scenarios and reflections from this browser. Save a copy first if you want to keep them.")) return;
+      store.clear();
+      state = fresh();
+      state.items = itemsFor(state.pack);
+      renderAll();
+      PlayLab.toast("Cleared. Ready for a fresh start");
+    }
+  };
+  document.querySelectorAll("[data-action]").forEach(function (btn) {
+    btn.addEventListener("click", function () { actions[btn.dataset.action](); });
+  });
+
+  /* ==================================================================
+     Start
+     ================================================================== */
+  function renderAll() {
+    renderPacks();
+    renderList();
+    renderCone();
+    renderReflect();
+  }
+  renderAll();
+})();
+</script>
+</body>
+</html>

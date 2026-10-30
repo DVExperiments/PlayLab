@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en-NZ">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How Might We Reframer | Futures PlayLab</title>
+  <meta name="description" content="Turn one problem statement into many by stretching, shrinking and flipping it.">
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/css/playlab.css">
+  <script>try{var t=localStorage.getItem("playlab:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+  <style>
+    .hm-section { margin-top: 1rem; }
+    .hm-section h2 { font-size: var(--step-2); }
+    .hm-section__head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0.5rem 1rem; }
+    .hm-progress { margin: 0; color: var(--ink-soft); font-weight: 700; }
+
+    .hm-start { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.25rem; }
+    @media (max-width: 820px) { .hm-start { grid-template-columns: minmax(0, 1fr); } }
+    .hm-start textarea { min-height: 6rem; }
+    .hm-first { font-weight: 700; }
+    .hm-start__foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.5rem; margin-top: 0.75rem; }
+
+    .hm-moves { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.85rem; }
+    @media (max-width: 1060px) { .hm-moves { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 640px) { .hm-moves { grid-template-columns: minmax(0, 1fr); } }
+    .hm-move {
+      display: flex; flex-direction: column; gap: 0.5rem;
+      padding: 1rem; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-md);
+    }
+    .hm-move.is-done { border-color: var(--accent); box-shadow: inset 4px 0 0 var(--accent); }
+    .hm-move h3 { margin: 0; }
+    .hm-move__how { margin: 0; }
+    .hm-move__eg { margin: 0; color: var(--ink-soft); font-size: var(--step--1); font-style: italic; }
+    .hm-move__field { margin-top: auto; padding-top: 0.25rem; }
+    .hm-move textarea { min-height: 5.5rem; }
+    .hm-move label { font-size: var(--step--1); }
+    .hm-star[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+    .hm-star { align-self: flex-start; }
+
+    .hm-shortlist { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; gap: 0.6rem; }
+    .hm-pick {
+      display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.25rem 0.85rem; align-items: start;
+      padding: 0.85rem 1rem; border: 1.5px solid var(--line); border-radius: var(--radius-md); background: var(--bg); cursor: pointer;
+    }
+    .hm-pick:has(input:checked) { border-color: var(--accent); background: var(--accent-tint); }
+    .hm-pick input { width: 1.25rem; height: 1.25rem; margin: 0.2rem 0 0; accent-color: var(--accent); }
+    .hm-pick__q { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); line-height: 1.25; }
+    .hm-pick__from { grid-column: 2; font-size: var(--step--1); color: var(--ink-soft); }
+    .hm-chosen {
+      margin: 1.5rem 0 0; padding: 1.25rem 1.4rem; border-radius: var(--radius-md);
+      background: var(--accent); color: var(--on-accent);
+    }
+    .hm-chosen p { margin: 0; }
+    .hm-chosen__label { font-size: var(--step--1); font-weight: 700; opacity: 0.9; }
+    .hm-chosen__q { font-family: var(--font-display); font-weight: 700; font-size: var(--step-2); line-height: 1.2; margin-top: 0.3rem !important; }
+    .hm-checks { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; gap: 0.5rem; }
+    .hm-checks label { display: flex; gap: 0.65rem; align-items: flex-start; font-weight: 400; margin: 0; cursor: pointer; }
+    .hm-checks input { width: 1.2rem; height: 1.2rem; margin-top: 0.2rem; accent-color: var(--accent); flex: none; }
+
+    @media print {
+      .hm-moves-panel, .hm-start-panel .hm-start__foot { display: none; }
+      .hm-pick { break-inside: avoid; }
+    }
+  </style>
+</head>
+
+<body class="cat-design" data-tool="hmw-reframer">
+
+<main id="main" class="page tool-page">
+
+  <header class="tool-intro">
+    <p class="tool-intro__cat"><a href="../../#design" data-pl-category-link data-pl="category">Design thinking</a></p>
+    <h1 data-pl="name">How Might We Reframer</h1>
+    <p class="lede" data-pl="description">Turn one problem statement into many by stretching, shrinking and flipping it.</p>
+    <dl class="tool-intro__meta">
+      <div><dt>Time</dt><dd data-pl="minutes">15 minutes</dd></div>
+      <div><dt>You leave with</dt><dd data-pl="output">A shortlist of reframed questions</dd></div>
+    </dl>
+  </header>
+
+  <section class="tool-steps" aria-labelledby="how-title">
+    <h2 id="how-title">How it works</h2>
+    <ol>
+      <li>Describe a problem you care about, then write it as a first “How might we…” question.</li>
+      <li>Work through the reframing moves. Try at least five, and go with your first thought.</li>
+      <li>Shortlist the questions that open up the most interesting possibilities.</li>
+      <li>Choose one, check it against the list, and reflect on how your thinking shifted.</li>
+    </ol>
+  </section>
+
+  <section class="panel hm-section hm-start-panel" aria-labelledby="start-title">
+    <h2 id="start-title">Start with the problem</h2>
+    <div class="hm-start">
+      <div>
+        <label for="problem">What’s the problem?</label>
+        <textarea id="problem" maxlength="400" placeholder="For example, lots of our new staff leave within their first year."></textarea>
+        <p class="hint">Describe what’s happening and who it affects. A real problem from your work is best.</p>
+      </div>
+      <div>
+        <label for="first">Your first “How might we…” question</label>
+        <textarea id="first" class="hm-first" maxlength="200" data-hmw placeholder="How might we keep new staff for longer?"></textarea>
+        <p class="hint">Don’t polish it. This is just your starting point.</p>
+      </div>
+    </div>
+    <div class="hm-start__foot">
+      <p class="hint" style="margin:0">Not sure where to start?</p>
+      <button class="btn btn--small" type="button" id="example-btn">Try an example</button>
+    </div>
+  </section>
+
+  <section class="panel hm-section hm-moves-panel" aria-labelledby="moves-title">
+    <div class="hm-section__head">
+      <h2 id="moves-title">Reframe it</h2>
+      <p class="hm-progress" id="progress" aria-live="polite"></p>
+    </div>
+    <p>Each move asks your question in a different way. The examples all reframe one question: “How might we keep new staff for longer?”</p>
+    <ul class="hm-moves" id="moves"></ul>
+  </section>
+
+  <section class="panel hm-section" id="workspace" aria-labelledby="short-title">
+    <h2 id="short-title">Choose your question</h2>
+    <p id="short-intro">Shortlist questions as you go, then choose the one you want to take forward.</p>
+    <ul class="hm-shortlist" id="shortlist"></ul>
+    <p class="empty" id="short-empty">Nothing shortlisted yet. Use the Shortlist button on any question you like, including your first one.</p>
+    <div id="chosen-wrap" hidden>
+      <div class="hm-chosen">
+        <p class="hm-chosen__label">The question we’ll take forward</p>
+        <p class="hm-chosen__q" id="chosen-q"></p>
+      </div>
+      <h3 style="margin-top:1.5rem">Check your question</h3>
+      <ul class="hm-checks" id="checks"></ul>
+    </div>
+  </section>
+
+  <section class="tool-actions" aria-label="Save and export">
+    <p class="tool-actions__note">Your work saves automatically in this browser.</p>
+    <div class="tool-actions__buttons">
+      <button class="btn btn--small" type="button" data-action="image">Download image</button>
+      <button class="btn btn--small" type="button" data-action="summary">Download summary</button>
+      <button class="btn btn--small" type="button" data-action="save">Save a copy</button>
+      <button class="btn btn--small" type="button" data-action="open">Open a copy</button>
+      <button class="btn btn--small" type="button" data-action="print">Print or save as PDF</button>
+      <button class="btn btn--small btn--danger" type="button" data-action="reset">Start over</button>
+    </div>
+  </section>
+
+  <section class="reflect" aria-labelledby="reflect-title">
+    <h2 id="reflect-title">Reflect</h2>
+    <p>Jot down a few thoughts. These save with the rest of your work.</p>
+    <ol>
+      <li>
+        <label for="r1">How did your understanding of the problem change as you reframed it?</label>
+        <textarea id="r1" data-reflect="change"></textarea>
+      </li>
+      <li>
+        <label for="r2">Which move opened up the most possibilities, and why do you think that was?</label>
+        <textarea id="r2" data-reflect="move"></textarea>
+      </li>
+      <li>
+        <label for="r3">Who should you test your chosen question with before you start designing solutions?</label>
+        <textarea id="r3" data-reflect="test"></textarea>
+      </li>
+    </ol>
+  </section>
+
+</main>
+
+<script src="../../assets/js/tools.js"></script>
+<script src="../../assets/js/playlab.js"></script>
+
+<script>
+(function () {
+  "use strict";
+
+  var TOOL_ID = "hmw-reframer";
+  var STEM = "How might we ";
+
+  var MOVES = [
+    { id: "out", name: "Zoom out", how: "Ask why the problem matters. Then frame your question around that bigger goal.",
+      eg: "How might we make our organisation somewhere people want to build a career?" },
+    { id: "in", name: "Zoom in", how: "Pick one part, one moment or one group, and focus on just that.",
+      eg: "How might we make a new starter’s first Monday unforgettable?" },
+    { id: "flip", name: "Flip it", how: "Turn the problem into an opportunity, or aim for the opposite of what you’d expect.",
+      eg: "How might we turn people leaving into a source of new recruits and ideas?" },
+    { id: "unlimit", name: "Remove a limit", how: "What if money, time, technology or the rules weren’t an issue?",
+      eg: "How might we keep new staff if we could redesign every role from scratch?" },
+    { id: "limit", name: "Add a limit", how: "Make it harder on purpose. No budget, one week, or no technology at all.",
+      eg: "How might we keep new staff longer without spending any extra money?" },
+    { id: "who", name: "Change who", how: "Centre a different person: someone affected by the problem but rarely asked.",
+      eg: "How might we help managers, not just new staff, get more out of the first year?" },
+    { id: "assume", name: "Question an assumption", how: "What does your question take for granted? Ask what happens if that isn’t true.",
+      eg: "How might we make it a good thing when people move on after a year?" },
+    { id: "future", name: "Jump ahead", how: "Ask the question about ten or more years from now. What will be different?",
+      eg: "How might we support new staff in 2035, when many of their colleagues may be AI agents?" },
+    { id: "borrow", name: "Borrow from elsewhere", how: "How would a completely different field, organisation or community tackle this?",
+      eg: "How might we welcome new staff the way a great hotel welcomes its guests?" },
+    { id: "worse", name: "Make it worse", how: "Ask how to make the problem worse. Then flip each answer into a new question.",
+      eg: "How might we make new staff leave even faster? (Then flip: How might we make sure no one feels ignored in week one?)" }
+  ];
+
+  var CHECKS = [
+    { id: "people", text: "It’s about people, not just a process, product or system." },
+    { id: "nosolution", text: "It doesn’t already contain a solution." },
+    { id: "broad", text: "It’s broad enough to allow lots of different ideas." },
+    { id: "narrow", text: "It’s focused enough that you’d know where to start." },
+    { id: "excited", text: "It’s a question you’d genuinely be excited to work on." }
+  ];
+
+  var EXAMPLES = [
+    { problem: "Lots of our new staff leave within their first year.", first: "How might we keep new staff for longer?" },
+    { problem: "Customers find our online forms confusing and phone us instead, which ties up the team.", first: "How might we make our online forms easier to use?" },
+    { problem: "Our team spends hours each week in meetings that don’t lead to decisions.", first: "How might we make our meetings more useful?" },
+    { problem: "Older people in our community are missing out on services that have moved online.", first: "How might we help older people use our online services?" }
+  ];
+
+  var EMPTY = { problem: "", first: "", firstStar: false, moves: {}, chosen: "", checks: {}, reflect: {} };
+  function fresh() { return JSON.parse(JSON.stringify(EMPTY)); }
+  var store = PlayLab.store(TOOL_ID);
+  var state = Object.assign(fresh(), store.get("state", {}) || {});
+  function save() { store.set("state", state); }
+
+  var esc = PlayLab.escape;
+  var $ = function (id) { return document.getElementById(id); };
+
+  function move(id) {
+    if (!state.moves[id]) state.moves[id] = { text: "", star: false };
+    return state.moves[id];
+  }
+  function clean(text) { var t = (text || "").trim(); return t === STEM.trim() ? "" : t; }
+
+  /* ==================================================================
+     Start section
+     ================================================================== */
+  $("problem").addEventListener("input", function (e) { state.problem = e.target.value; save(); });
+  $("first").addEventListener("input", function (e) { state.first = e.target.value; save(); renderShortlist(); });
+
+  $("example-btn").addEventListener("click", function () {
+    if ((state.problem.trim() || clean(state.first)) && !confirm("Replace your problem and first question with an example? Your reframes stay as they are.")) return;
+    var options = EXAMPLES.filter(function (x) { return x.problem !== state.problem; });
+    var ex = options[Math.floor(Math.random() * options.length)];
+    state.problem = ex.problem; state.first = ex.first;
+    $("problem").value = ex.problem; $("first").value = ex.first;
+    save(); renderShortlist();
+    $("moves-title").scrollIntoView({ block: "start", behavior: "smooth" });
+  });
+
+  // Any "How might we" box starts with the stem, so people only type the interesting part
+  document.addEventListener("focusin", function (e) {
+    var el = e.target;
+    if (!el.matches || !el.matches("[data-hmw]") || el.value) return;
+    el.value = STEM;
+    el.setSelectionRange(STEM.length, STEM.length);
+  });
+  document.addEventListener("focusout", function (e) {
+    var el = e.target;
+    if (el.matches && el.matches("[data-hmw]") && el.value.trim() === STEM.trim()) {
+      el.value = "";
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  });
+
+  /* ==================================================================
+     Moves
+     ================================================================== */
+  function renderMoves() {
+    $("moves").innerHTML = MOVES.map(function (m) {
+      var st = move(m.id), done = !!clean(st.text);
+      return '<li class="hm-move' + (done ? " is-done" : "") + '" data-move="' + m.id + '">' +
+        "<h3>" + esc(m.name) + "</h3>" +
+        '<p class="hm-move__how">' + esc(m.how) + "</p>" +
+        '<p class="hm-move__eg">For example: ' + esc(m.eg) + "</p>" +
+        '<div class="hm-move__field"><label for="m-' + m.id + '">Your reframed question</label>' +
+        '<textarea id="m-' + m.id + '" maxlength="200" data-hmw>' + esc(st.text) + "</textarea></div>" +
+        '<button class="btn btn--small hm-star" type="button" data-star="' + m.id + '" aria-pressed="' + !!st.star + '"' +
+        ' aria-label="Shortlist the ' + esc(m.name.toLowerCase()) + ' question">' + (st.star ? "Shortlisted" : "Shortlist") + "</button>" +
+        "</li>";
+    }).join("");
+    renderProgress();
+  }
+
+  function renderProgress() {
+    var n = MOVES.filter(function (m) { return clean(move(m.id).text); }).length;
+    $("progress").textContent = n + " of " + MOVES.length + " moves tried" + (n >= 5 ? ". Nice work" : "");
+  }
+
+  $("moves").addEventListener("input", function (e) {
+    var li = e.target.closest("[data-move]");
+    if (!li) return;
+    var st = move(li.dataset.move);
+    st.text = e.target.value;
+    li.classList.toggle("is-done", !!clean(st.text));
+    save(); renderProgress();
+    if (st.star) renderShortlist();
+  });
+
+  $("moves").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-star]");
+    if (!b) return;
+    var st = move(b.dataset.star);
+    if (!st.star && !clean(st.text)) { PlayLab.toast("Write a question first, then shortlist it"); $("m-" + b.dataset.star).focus(); return; }
+    st.star = !st.star;
+    if (!st.star && state.chosen === b.dataset.star) state.chosen = "";
+    b.setAttribute("aria-pressed", String(st.star));
+    b.textContent = st.star ? "Shortlisted" : "Shortlist";
+    save(); renderShortlist();
+  });
+
+  /* ==================================================================
+     Shortlist and choice
+     ================================================================== */
+  function shortlistItems() {
+    var items = [];
+    if (state.firstStar && clean(state.first)) items.push({ id: "first", q: clean(state.first), from: "Your first question" });
+    MOVES.forEach(function (m) {
+      var st = move(m.id);
+      if (st.star && clean(st.text)) items.push({ id: m.id, q: clean(st.text), from: m.name });
+    });
+    return items;
+  }
+
+  function renderShortlist() {
+    var items = shortlistItems();
+    var firstBtn = clean(state.first)
+      ? '<li><button class="btn btn--small hm-star" type="button" id="star-first" aria-pressed="' + !!state.firstStar + '">' +
+        (state.firstStar ? "First question shortlisted" : "Shortlist your first question too") + "</button></li>"
+      : "";
+    $("shortlist").innerHTML = items.map(function (it) {
+      return '<li><label class="hm-pick">' +
+        '<input type="radio" name="chosen" value="' + it.id + '"' + (state.chosen === it.id ? " checked" : "") + ">" +
+        '<span class="hm-pick__q">' + esc(it.q) + "</span>" +
+        '<span class="hm-pick__from">' + esc(it.from) + "</span>" +
+        "</label></li>";
+    }).join("") + firstBtn;
+    $("short-empty").hidden = items.length > 0;
+
+    var chosen = items.find(function (it) { return it.id === state.chosen; });
+    $("chosen-wrap").hidden = !chosen;
+    if (chosen) $("chosen-q").textContent = chosen.q;
+  }
+
+  $("shortlist").addEventListener("change", function (e) {
+    if (e.target.name !== "chosen") return;
+    state.chosen = e.target.value;
+    save(); renderShortlist();
+    PlayLab.toast("Chosen. Now check it against the list");
+  });
+  $("shortlist").addEventListener("click", function (e) {
+    if (e.target.id !== "star-first") return;
+    state.firstStar = !state.firstStar;
+    if (!state.firstStar && state.chosen === "first") state.chosen = "";
+    save(); renderShortlist();
+    $("star-first").focus();
+  });
+
+  function renderChecks() {
+    $("checks").innerHTML = CHECKS.map(function (c) {
+      return '<li><label><input type="checkbox" data-check="' + c.id + '"' + (state.checks[c.id] ? " checked" : "") + "> " + esc(c.text) + "</label></li>";
+    }).join("");
+  }
+  $("checks").addEventListener("change", function (e) {
+    var id = e.target.dataset.check;
+    if (!id) return;
+    state.checks[id] = e.target.checked;
+    save();
+    var all = CHECKS.every(function (c) { return state.checks[c.id]; });
+    if (all) PlayLab.toast("All five ticked. That’s a strong question");
+  });
+
+  /* ---------- Reflections ---------- */
+  var reflectFields = document.querySelectorAll("[data-reflect]");
+  function renderReflect() { reflectFields.forEach(function (f) { f.value = state.reflect[f.dataset.reflect] || ""; }); }
+  reflectFields.forEach(function (f) {
+    f.addEventListener("input", function () { state.reflect[f.dataset.reflect] = f.value; save(); });
+  });
+
+  /* ==================================================================
+     Save and export
+     ================================================================== */
+  function summary() {
+    var items = shortlistItems();
+    var chosen = items.find(function (it) { return it.id === state.chosen; });
+    var lines = [
+      "# How Might We Reframer",
+      "",
+      "Futures PlayLab, academyEX. Created " + new Date().toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }) + ".",
+      "",
+      "## The problem",
+      "",
+      state.problem.trim() || "_Not written yet._",
+      "",
+      "First question: " + (clean(state.first) || "_not written yet_"),
+      ""
+    ];
+    if (chosen) lines.push("## The question we’ll take forward", "", "**" + chosen.q + "**", "");
+    if (chosen) {
+      CHECKS.forEach(function (c) { lines.push("- [" + (state.checks[c.id] ? "x" : " ") + "] " + c.text); });
+      lines.push("");
+    }
+    lines.push("## Reframes", "");
+    MOVES.forEach(function (m) {
+      var t = clean(move(m.id).text);
+      if (t) lines.push("- **" + m.name + ":** " + t + (move(m.id).star ? " _(shortlisted)_" : ""));
+    });
+    if (!MOVES.some(function (m) { return clean(move(m.id).text); })) lines.push("_None yet._");
+    lines.push("", "## Reflections", "");
+    document.querySelectorAll(".reflect label").forEach(function (lab) {
+      var key = $(lab.htmlFor).dataset.reflect;
+      lines.push("**" + lab.textContent + "**", "", (state.reflect[key] || "").trim() || "_No answer yet._", "");
+    });
+    return lines.join("\n");
+  }
+
+  var actions = {
+    image: function () {
+      if (!shortlistItems().length) { PlayLab.toast("Shortlist a question first, then download your choice"); return; }
+      PlayLab.export.elementToPNG($("workspace"), PlayLab.export.filename(TOOL_ID, "png"))
+        .then(function () { PlayLab.toast("Image downloaded"); })
+        .catch(function (err) { PlayLab.toast(err.message); });
+    },
+    summary: function () {
+      PlayLab.export.markdown(PlayLab.export.filename(TOOL_ID + "-summary", "md"), summary());
+      PlayLab.toast("Summary downloaded");
+    },
+    save: function () {
+      PlayLab.export.saveFile(TOOL_ID, state);
+      PlayLab.toast("Copy saved to your downloads");
+    },
+    open: function () {
+      PlayLab.export.openSaveFile(TOOL_ID).then(function (data) {
+        state = Object.assign(fresh(), data);
+        save(); renderAll();
+        PlayLab.toast("Copy opened");
+      }).catch(function (err) {
+        if (err.message !== "cancelled") PlayLab.toast(err.message);
+      });
+    },
+    print: function () { PlayLab.export.print(); },
+    reset: function () {
+      if (!confirm("Start over? This clears your problem, questions, shortlist and reflections from this browser. Save a copy first if you want to keep them.")) return;
+      store.clear();
+      state = fresh();
+      renderAll();
+      PlayLab.toast("Cleared. Ready for a fresh start");
+    }
+  };
+  document.querySelectorAll("[data-action]").forEach(function (btn) {
+    btn.addEventListener("click", function () { actions[btn.dataset.action](); });
+  });
+
+  /* ==================================================================
+     Start
+     ================================================================== */
+  function renderAll() {
+    $("problem").value = state.problem;
+    $("first").value = state.first;
+    renderMoves();
+    renderShortlist();
+    renderChecks();
+    renderReflect();
+  }
+  renderAll();
+})();
+</script>
+</body>
+</html>

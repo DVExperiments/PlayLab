@@ -97,8 +97,8 @@ Store each tool's data as one `state` object, so saving, opening a copy and star
 | 1 | Foundation: shared styles and scripts, home, about, template | Done |
 | 2 | Pilots: What Your Browser Knows, Futures Wheel | Done |
 | 3 | Review pilots and adjust the foundation | When feedback arrives |
-| 4A | Signal Collider (done), How Might We Reframer (next), Futures Cone Sorter | In progress |
-| 4B | Assumption Mapper, Three Horizons Mapper, Backcasting Timeline, Pre-mortem | |
+| 4A | Signal Collider, How Might We Reframer, Futures Cone Sorter | Done |
+| 4B | Assumption Mapper, Three Horizons Mapper, Backcasting Timeline, Pre-mortem | Next |
 | 4C | Feed Algorithm Sandbox, Stakeholder Ecosystem Map | |
 | 4D | Train a Biased Classifier, AI Output Critique Lab, Data Sovereignty Explorer (content prepared first; the Data Sovereignty Explorer developed with Māori advisors) | |
 | 5 | Polish: accessibility check, facilitator notes, consistency pass | |
