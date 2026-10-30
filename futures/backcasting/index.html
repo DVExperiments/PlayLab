@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en-NZ">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Backcasting Timeline | Futures PlayLab</title>
+  <meta name="description" content="Start from a future you want and work backwards to what needs to happen today.">
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/css/playlab.css">
+  <script>try{var t=localStorage.getItem("playlab:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+  <style>
+    .bc-layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+    .bc-view { position: sticky; top: 5.5rem; max-height: calc(100vh - 7rem); overflow-y: auto; }
+    @media (max-width: 960px) { .bc-layout { grid-template-columns: minmax(0, 1fr); } .bc-view { position: static; max-height: none; } }
+    .bc-edit h2, .bc-view h2 { font-size: var(--step-2); }
+
+    .bc-stage { padding: 1rem; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--bg); }
+    .bc-stage + .bc-stage { margin-top: 0.5rem; }
+    .bc-stage.is-vision { border-top: 6px solid var(--accent); }
+    .bc-stage.is-first { border-top: 6px solid var(--design); }
+    .bc-stage h3 { margin: 0 0 0.25rem; }
+    .bc-stage__tag { margin: 0 0 0.2rem; font-size: var(--step--1); font-weight: 700; color: var(--ink-soft); }
+    .bc-stage__help { margin: 0 0 0.75rem; color: var(--ink-soft); }
+    .bc-stage textarea { min-height: 5.75rem; }
+    .bc-field + .bc-field { margin-top: 0.75rem; }
+    .bc-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 12rem); gap: 0.75rem; }
+    @media (max-width: 560px) { .bc-two { grid-template-columns: minmax(0, 1fr); } }
+    .bc-signs { display: grid; gap: 0.4rem; }
+    .bc-arrow { text-align: center; color: var(--ink-soft); font-weight: 700; font-size: var(--step--1); margin: 0.5rem 0; }
+    .bc-arrow::before { content: "↓ "; }
+    .bc-vision-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 0.5rem 1rem; }
+    .bc-vision-head select { width: auto; }
+    .bc-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
+
+    /* Timeline */
+    .bc-line { list-style: none; margin: 1rem 0 0; padding: 0; position: relative; }
+    .bc-line::before {
+      content: ""; position: absolute; left: 0.95rem; top: 1rem; bottom: 1rem; width: 4px; border-radius: 2px;
+      background: linear-gradient(to bottom, var(--accent), var(--design));
+    }
+    .bc-stop { position: relative; padding: 0 0 1.25rem 3rem; min-height: 2.5rem; cursor: pointer; }
+    .bc-stop:last-child { padding-bottom: 0; }
+    .bc-stop::before {
+      content: ""; position: absolute; left: 0.35rem; top: 0.2rem; width: 1.3rem; height: 1.3rem; border-radius: 999px;
+      background: var(--surface); border: 4px solid var(--accent);
+    }
+    .bc-stop.is-vision::before { left: 0; top: 0; width: 2rem; height: 2rem; background: var(--accent); border-color: var(--accent); }
+    .bc-stop.is-first::before { border-color: var(--design); background: var(--design); }
+    .bc-stop.is-empty::before { border-style: dashed; background: var(--surface); }
+    .bc-stop__year { font-family: var(--font-display); font-weight: 800; font-size: var(--step-1); line-height: 1.1; margin: 0; }
+    .bc-stop.is-vision .bc-stop__year { color: var(--accent); font-size: var(--step-2); }
+    .bc-stop__text { margin: 0.2rem 0 0; }
+    .bc-stop.is-vision .bc-stop__text { font-weight: 700; }
+    .bc-stop__who { margin: 0.2rem 0 0; font-size: var(--step--1); color: var(--ink-soft); }
+    .bc-stop__empty { margin: 0.2rem 0 0; color: var(--ink-soft); font-style: italic; }
+    .bc-stop:hover .bc-stop__year, .bc-stop:focus-visible .bc-stop__year { text-decoration: underline; }
+    .bc-stop:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; border-radius: var(--radius-sm); }
+    .bc-signs-view { margin: 0.5rem 0 0; padding-left: 1.1rem; font-size: var(--step--1); color: var(--ink-soft); }
+    .bc-flash { box-shadow: 0 0 0 3px var(--accent); }
+
+    @media print {
+      .bc-edit { display: none; }
+      .bc-layout { display: block; }
+      .bc-view { position: static; max-height: none; overflow: visible; }
+    }
+  </style>
+</head>
+
+<body class="cat-futures" data-tool="backcasting">
+
+<main id="main" class="page tool-page">
+
+  <header class="tool-intro">
+    <p class="tool-intro__cat"><a href="../../#futures" data-pl-category-link data-pl="category">Futures thinking</a></p>
+    <h1 data-pl="name">Backcasting Timeline</h1>
+    <p class="lede" data-pl="description">Start from a future you want and work backwards to what needs to happen today.</p>
+    <dl class="tool-intro__meta">
+      <div><dt>Time</dt><dd data-pl="minutes">20 minutes</dd></div>
+      <div><dt>You leave with</dt><dd data-pl="output">A step-by-step timeline</dd></div>
+    </dl>
+  </header>
+
+  <section class="tool-steps" aria-labelledby="how-title">
+    <h2 id="how-title">How it works</h2>
+    <ol>
+      <li>Describe a future you want as if it has already happened, and how you’d know you’d got there.</li>
+      <li>Step back in time. For each date, ask: what had to be true by then for the next step to happen?</li>
+      <li>When you reach today, decide on a first step you can take in the next three months.</li>
+      <li>Read your timeline from today forwards to check it makes sense, then reflect.</li>
+    </ol>
+  </section>
+
+  <div class="bc-layout">
+
+    <section class="panel bc-edit" aria-labelledby="edit-title">
+      <h2 id="edit-title">Work backwards</h2>
+      <div id="stages"></div>
+    </section>
+
+    <section class="panel bc-view" id="workspace" aria-labelledby="view-title">
+      <h2 id="view-title">Your timeline</h2>
+      <p class="hint" style="margin-top:-0.25rem">Read from the bottom up to follow the path from today. Select any step to edit it.</p>
+      <ol class="bc-line" id="timeline"></ol>
+    </section>
+
+  </div>
+
+  <section class="tool-actions" aria-label="Save and export">
+    <p class="tool-actions__note">Your work saves automatically in this browser.</p>
+    <div class="tool-actions__buttons">
+      <button class="btn btn--small" type="button" data-action="image">Download image</button>
+      <button class="btn btn--small" type="button" data-action="summary">Download summary</button>
+      <button class="btn btn--small" type="button" data-action="save">Save a copy</button>
+      <button class="btn btn--small" type="button" data-action="open">Open a copy</button>
+      <button class="btn btn--small" type="button" data-action="print">Print or save as PDF</button>
+      <button class="btn btn--small btn--danger" type="button" data-action="reset">Start over</button>
+    </div>
+  </section>
+
+  <section class="reflect" aria-labelledby="reflect-title">
+    <h2 id="reflect-title">Reflect</h2>
+    <p>Jot down a few thoughts. These save with the rest of your work.</p>
+    <ol>
+      <li>
+        <label for="r1">Which step was hardest to fill in? What does that gap tell you?</label>
+        <textarea id="r1" data-reflect="hardest"></textarea>
+      </li>
+      <li>
+        <label for="r2">Who else needs to be part of this journey, and how might you bring them in?</label>
+        <textarea id="r2" data-reflect="who"></textarea>
+      </li>
+      <li>
+        <label for="r3">How did working backwards from the future feel different from planning forwards from today?</label>
+        <textarea id="r3" data-reflect="different"></textarea>
+      </li>
+    </ol>
+  </section>
+
+</main>
+
+<script src="../../assets/js/tools.js"></script>
+<script src="../../assets/js/playlab.js"></script>
+
+<script>
+(function () {
+  "use strict";
+
+  var TOOL_ID = "backcasting";
+  var THIS_YEAR = new Date().getFullYear();
+  var STEPS = 3;   // milestones between today and the future
+
+  var WHEN = ["This week", "This month", "Within three months"];
+
+  var EXAMPLE = {
+    vision: "Young people in our town can build a career here without having to move away.",
+    years: 20,
+    signs: ["Fewer 18 to 25-year-olds leave town each year", "Young people say they can see a future here", "Local employers can fill skilled roles locally"],
+    steps: [
+      { text: "A youth panel helps decide what the town invests in, and its ideas are being funded.", who: "Council, schools and youth groups" },
+      { text: "High-speed internet and a shared work hub make remote jobs a real option in town.", who: "Council, internet providers, local businesses" },
+      { text: "Local businesses, the council and the marae run a shared apprenticeship scheme with 200 places a year.", who: "Employers, council, iwi and marae" }
+    ],
+    first: { what: "Hold a hui with five local employers and a group of young people to ask what’s missing.", who: "Me, with the council’s economic development team", when: "Within three months" }
+  };
+
+  var EMPTY = { vision: "", years: 20, signs: ["", "", ""], steps: [{ text: "", who: "" }, { text: "", who: "" }, { text: "", who: "" }], first: { what: "", who: "", when: "" }, reflect: {} };
+  function fresh() { return JSON.parse(JSON.stringify(EMPTY)); }
+  var store = PlayLab.store(TOOL_ID);
+  var state = Object.assign(fresh(), store.get("state", {}) || {});
+  function save() { store.set("state", state); }
+
+  var esc = PlayLab.escape;
+  var $ = function (id) { return document.getElementById(id); };
+
+  function visionYear() { return THIS_YEAR + state.years; }
+  // steps[0] is nearest to today; steps[2] is nearest to the vision
+  function stepYear(i) { return THIS_YEAR + Math.round(state.years * (i + 1) / (STEPS + 1)); }
+
+  /* ==================================================================
+     Editor (shown from the future back to today)
+     ================================================================== */
+  function renderStages() {
+    var yearOpts = [10, 15, 20, 25, 30].map(function (y) {
+      return '<option value="' + y + '"' + (state.years === y ? " selected" : "") + ">" + (THIS_YEAR + y) + " (" + y + " years)</option>";
+    }).join("");
+
+    var html =
+      '<div class="bc-stage is-vision" id="stage-vision">' +
+        '<div class="bc-vision-head"><div><p class="bc-stage__tag">Start here</p><h3>The future you want</h3></div>' +
+        '<div><label for="years">The year it’s true</label><select id="years">' + yearOpts + "</select></div></div>" +
+        '<p class="bc-stage__help">Describe it as if it has already happened. Be specific about what’s different and for whom.</p>' +
+        '<div class="bc-field"><label for="vision">In <span data-vy>' + visionYear() + "</span>…</label>" +
+        '<textarea id="vision" maxlength="300" placeholder="For example, young people in our town can build a career here without having to move away.">' + esc(state.vision) + "</textarea></div>" +
+        '<div class="bc-field"><p class="label" id="signs-label">How would you know you’d got there?</p><div class="bc-signs" role="group" aria-labelledby="signs-label">' +
+        state.signs.map(function (s, i) {
+          return '<label class="visually-hidden" for="sign-' + i + '">Sign of success ' + (i + 1) + "</label>" +
+            '<input type="text" id="sign-' + i + '" data-sign="' + i + '" maxlength="120" value="' + esc(s) + '" placeholder="Sign of success ' + (i + 1) + '">';
+        }).join("") + "</div></div>" +
+        '<div class="bc-row"><p class="hint" style="margin:0">Need a starting point?</p><button class="btn btn--small" type="button" id="example-btn">Try an example</button></div>' +
+      "</div>";
+
+    for (var i = STEPS - 1; i >= 0; i--) {
+      var st = state.steps[i], y = stepYear(i), next = i === STEPS - 1 ? "your future" : "the " + stepYear(i + 1) + " step";
+      html += '<p class="bc-arrow">Step back in time</p>' +
+        '<div class="bc-stage" id="stage-' + i + '">' +
+          '<p class="bc-stage__tag">Step back to ' + y + "</p>" +
+          "<h3>What had to be true by " + y + "?</h3>" +
+          '<p class="bc-stage__help">What needed to be in place for ' + esc(next) + " to happen?</p>" +
+          '<div class="bc-field"><label class="visually-hidden" for="step-' + i + '">What had to be true by ' + y + "?</label>" +
+          '<textarea id="step-' + i + '" data-step="' + i + '" data-field="text" maxlength="300">' + esc(st.text) + "</textarea></div>" +
+          '<div class="bc-field"><label for="who-' + i + '">Who made it happen?</label>' +
+          '<input type="text" id="who-' + i + '" data-step="' + i + '" data-field="who" maxlength="120" value="' + esc(st.who) + '"></div>' +
+        "</div>";
+    }
+
+    html += '<p class="bc-arrow">Back to today</p>' +
+      '<div class="bc-stage is-first" id="stage-first">' +
+        '<p class="bc-stage__tag">Today</p><h3>Your first step</h3>' +
+        '<p class="bc-stage__help">What’s one thing you could do in the next three months to start the journey?</p>' +
+        '<div class="bc-field"><label for="first-what">What will you do?</label>' +
+        '<textarea id="first-what" data-first="what" maxlength="300">' + esc(state.first.what) + "</textarea></div>" +
+        '<div class="bc-field bc-two"><div><label for="first-who">Who’s involved?</label>' +
+        '<input type="text" id="first-who" data-first="who" maxlength="120" value="' + esc(state.first.who) + '"></div>' +
+        '<div><label for="first-when">By when?</label><select id="first-when" data-first="when"><option value="">Choose</option>' +
+        WHEN.map(function (w) { return "<option" + (state.first.when === w ? " selected" : "") + ">" + w + "</option>"; }).join("") +
+        "</select></div></div>" +
+      "</div>";
+
+    $("stages").innerHTML = html;
+  }
+
+  $("stages").addEventListener("input", function (e) {
+    var t = e.target;
+    if (t.id === "vision") state.vision = t.value;
+    else if (t.dataset.sign) state.signs[Number(t.dataset.sign)] = t.value;
+    else if (t.dataset.step) state.steps[Number(t.dataset.step)][t.dataset.field] = t.value;
+    else if (t.dataset.first) state.first[t.dataset.first] = t.value;
+    else return;
+    save(); renderTimeline();
+  });
+  $("stages").addEventListener("change", function (e) {
+    if (e.target.id === "years") {
+      state.years = Number(e.target.value);
+      save(); renderStages(); renderTimeline();
+      $("years").focus();
+    } else if (e.target.dataset.first === "when") {
+      state.first.when = e.target.value; save(); renderTimeline();
+    }
+  });
+  $("stages").addEventListener("click", function (e) {
+    if (e.target.id !== "example-btn") return;
+    var started = state.vision.trim() || state.steps.some(function (s) { return s.text.trim(); }) || state.first.what.trim();
+    if (started && !confirm("Replace your timeline with an example?")) return;
+    var ex = JSON.parse(JSON.stringify(EXAMPLE));
+    state.vision = ex.vision; state.years = ex.years; state.signs = ex.signs; state.first = ex.first;
+    state.steps = ex.steps;   // listed from the step nearest today to the one nearest the future
+    save(); renderStages(); renderTimeline();
+    PlayLab.toast("Example loaded. Read it from the bottom up");
+  });
+
+  /* ==================================================================
+     Timeline (future at the top, today at the bottom)
+     ================================================================== */
+  function stop(cls, year, text, who, target, emptyMsg) {
+    return '<li class="bc-stop ' + cls + (text ? "" : " is-empty") + '" data-target="' + target + '" tabindex="0" role="button" aria-label="' + esc(year + ": " + (text || emptyMsg) + ". Select to edit.") + '">' +
+      '<p class="bc-stop__year">' + esc(year) + "</p>" +
+      (text ? '<p class="bc-stop__text">' + esc(text) + "</p>" : '<p class="bc-stop__empty">' + esc(emptyMsg) + "</p>") +
+      (who ? '<p class="bc-stop__who">' + esc(who) + "</p>" : "") + "</li>";
+  }
+  function renderTimeline() {
+    var signs = state.signs.filter(function (s) { return s.trim(); });
+    var html = stop("is-vision", String(visionYear()), state.vision.trim(), "", "stage-vision", "Describe the future you want");
+    if (signs.length) {
+      html = html.replace(/<\/li>$/, '<ul class="bc-signs-view">' + signs.map(function (s) { return "<li>" + esc(s) + "</li>"; }).join("") + "</ul></li>");
+    }
+    for (var i = STEPS - 1; i >= 0; i--) {
+      var st = state.steps[i];
+      html += stop("", String(stepYear(i)), st.text.trim(), st.who.trim(), "stage-" + i, "What had to be true by then?");
+    }
+    var f = state.first;
+    html += stop("is-first", "Today" + (f.when ? " (" + f.when.toLowerCase() + ")" : ""), f.what.trim(), f.who.trim(), "stage-first", "Your first step");
+    $("timeline").innerHTML = html;
+  }
+
+  function activate(li) {
+    var stage = $(li.dataset.target); if (!stage) return;
+    stage.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    var field = stage.querySelector("textarea");
+    if (field) field.focus({ preventScroll: true });
+    stage.classList.add("bc-flash"); setTimeout(function () { stage.classList.remove("bc-flash"); }, 1200);
+  }
+  $("timeline").addEventListener("click", function (e) { var li = e.target.closest("[data-target]"); if (li) activate(li); });
+  $("timeline").addEventListener("keydown", function (e) {
+    var li = e.target.closest("[data-target]");
+    if (li && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); activate(li); }
+  });
+
+  /* ---------- Reflections ---------- */
+  var reflectFields = document.querySelectorAll("[data-reflect]");
+  function renderReflect() { reflectFields.forEach(function (f) { f.value = state.reflect[f.dataset.reflect] || ""; }); }
+  reflectFields.forEach(function (f) {
+    f.addEventListener("input", function () { state.reflect[f.dataset.reflect] = f.value; save(); });
+  });
+
+  /* ==================================================================
+     Save and export
+     ================================================================== */
+  function summary() {
+    var lines = [
+      "# Backcasting Timeline",
+      "",
+      "Futures PlayLab, academyEX. Created " + new Date().toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }) + ".",
+      "",
+      "## The future we want (" + visionYear() + ")",
+      "",
+      state.vision.trim() || "_Not written yet._",
+      ""
+    ];
+    var signs = state.signs.filter(function (s) { return s.trim(); });
+    if (signs.length) { lines.push("How we’ll know we’ve got there:", ""); signs.forEach(function (s) { lines.push("- " + s.trim()); }); lines.push(""); }
+    lines.push("## The path, from today forwards", "");
+    var f = state.first;
+    lines.push("**Today" + (f.when ? " (" + f.when.toLowerCase() + ")" : "") + ":** " + (f.what.trim() || "_first step not decided_") + (f.who.trim() ? " _Who: " + f.who.trim() + "_" : ""), "");
+    for (var i = 0; i < STEPS; i++) {
+      var st = state.steps[i];
+      lines.push("**By " + stepYear(i) + ":** " + (st.text.trim() || "_not written yet_") + (st.who.trim() ? " _Who: " + st.who.trim() + "_" : ""), "");
+    }
+    lines.push("**By " + visionYear() + ":** " + (state.vision.trim() || "_vision not written yet_"), "");
+    lines.push("## Reflections", "");
+    document.querySelectorAll(".reflect label").forEach(function (lab) {
+      var key = $(lab.htmlFor).dataset.reflect;
+      lines.push("**" + lab.textContent + "**", "", (state.reflect[key] || "").trim() || "_No answer yet._", "");
+    });
+    return lines.join("\n");
+  }
+
+  var actions = {
+    image: function () {
+      var view = $("workspace");
+      view.style.maxHeight = "none"; view.style.overflow = "visible";   // capture the whole timeline
+      PlayLab.export.elementToPNG(view, PlayLab.export.filename(TOOL_ID, "png"))
+        .then(function () { PlayLab.toast("Image downloaded"); })
+        .catch(function (err) { PlayLab.toast(err.message); })
+        .then(function () { view.style.maxHeight = ""; view.style.overflow = ""; });
+    },
+    summary: function () {
+      PlayLab.export.markdown(PlayLab.export.filename(TOOL_ID + "-summary", "md"), summary());
+      PlayLab.toast("Summary downloaded");
+    },
+    save: function () {
+      PlayLab.export.saveFile(TOOL_ID, state);
+      PlayLab.toast("Copy saved to your downloads");
+    },
+    open: function () {
+      PlayLab.export.openSaveFile(TOOL_ID).then(function (data) {
+        state = Object.assign(fresh(), data);
+        save(); renderAll();
+        PlayLab.toast("Copy opened");
+      }).catch(function (err) {
+        if (err.message !== "cancelled") PlayLab.toast(err.message);
+      });
+    },
+    print: function () { PlayLab.export.print(); },
+    reset: function () {
+      if (!confirm("Start over? This clears your timeline and reflections from this browser. Save a copy first if you want to keep them.")) return;
+      store.clear();
+      state = fresh();
+      renderAll();
+      PlayLab.toast("Cleared. Ready for a fresh start");
+    }
+  };
+  document.querySelectorAll("[data-action]").forEach(function (btn) {
+    btn.addEventListener("click", function () { actions[btn.dataset.action](); });
+  });
+
+  function renderAll() { renderStages(); renderTimeline(); renderReflect(); }
+  renderAll();
+})();
+</script>
+</body>
+</html>

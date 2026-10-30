@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en-NZ">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pre-mortem | Futures PlayLab</title>
+  <meta name="description" content="Imagine your project has failed, then work out why before it happens.">
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/css/playlab.css">
+  <script>try{var t=localStorage.getItem("playlab:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+  <style>
+    body { --risk-low: var(--surface-2); --risk-mid: var(--literacy-tint); --risk-high: #FCE4E1; }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) body { --risk-high: #3D2226; } }
+    :root[data-theme="dark"] body { --risk-high: #3D2226; }
+
+    .pm-layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+    .pm-view { position: sticky; top: 5.5rem; }
+    @media (max-width: 960px) { .pm-layout { grid-template-columns: minmax(0, 1fr); } .pm-view { position: static; } }
+    .pm-edit h2, .pm-view h2, .pm-plan h2 { font-size: var(--step-2); }
+    .pm-block + .pm-block { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line); }
+    .pm-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
+    .pm-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 11rem); gap: 0.75rem; align-items: end; }
+    @media (max-width: 560px) { .pm-two { grid-template-columns: minmax(0, 1fr); } }
+
+    .pm-headline-box { margin-top: 0.75rem; padding: 1rem; border-radius: var(--radius-md); background: var(--ink); color: var(--bg); }
+    .pm-headline-box label { color: var(--bg); }
+    .pm-headline-box p { margin: 0 0 0.5rem; font-size: var(--step--1); opacity: 0.85; }
+    .pm-headline-box textarea { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); min-height: 4.5rem; }
+
+    .pm-lenses { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.35rem 0 0.75rem; }
+    .pm-lenses button { font: inherit; font-size: 0.85rem; font-weight: 700; min-height: 36px; padding: 0.2rem 0.75rem; border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+    .pm-lenses button:hover { border-color: var(--ink); }
+    .pm-lenses button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+    .pm-lens-q { margin: 0 0 0.5rem; padding: 0.6rem 0.85rem; border-radius: var(--radius-sm); background: var(--accent-tint); }
+
+    .pm-list { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; gap: 0.75rem; }
+    .pm-item { padding: 0.9rem 1rem; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-md); }
+    .pm-item.is-flash { box-shadow: 0 0 0 3px var(--accent); }
+    .pm-item__top { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0.6rem; align-items: start; }
+    .pm-num { display: inline-grid; place-items: center; width: 2rem; height: 2rem; border-radius: 999px; background: var(--ink); color: var(--bg); font-weight: 700; }
+    .pm-item[data-level="high"] .pm-num { background: var(--danger); color: var(--surface); }
+    .pm-item textarea { min-height: 4.6rem; }
+    .pm-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.5rem 0 0; font-size: var(--step--1); }
+    .pm-tag { padding: 0.1rem 0.6rem; border-radius: 999px; background: var(--surface-2); font-weight: 700; }
+    .pm-tag--high { background: var(--danger); color: var(--surface); }
+    .pm-tag--mid { background: var(--literacy); color: var(--surface); }
+    .pm-rates { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.6rem 1rem; margin-top: 0.75rem; }
+    @media (max-width: 560px) { .pm-rates { grid-template-columns: minmax(0, 1fr); } }
+    .pm-rate p { margin: 0 0 0.3rem; font-size: var(--step--1); font-weight: 700; }
+    .pm-seg { display: flex; gap: 0.3rem; }
+    .pm-seg button { flex: 1; font: inherit; font-size: 0.85rem; font-weight: 700; min-height: 36px; border-radius: var(--radius-sm); border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+    .pm-seg button:hover { border-color: var(--ink); }
+    .pm-seg button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+
+    /* Risk grid */
+    .pm-grid { display: grid; grid-template-columns: 2rem repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(5.5rem, auto)) auto auto; gap: 4px; margin-top: 0.5rem; }
+    .pm-cell { border-radius: var(--radius-sm); padding: 0.4rem; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 0.3rem; }
+    .pm-cell[data-level="low"] { background: var(--risk-low); }
+    .pm-cell[data-level="mid"] { background: var(--risk-mid); }
+    .pm-cell[data-level="high"] { background: var(--risk-high); }
+    .pm-chip { font: inherit; font-weight: 700; font-size: 0.85rem; width: 2rem; height: 2rem; border-radius: 999px; border: 2px solid var(--surface); background: var(--ink); color: var(--bg); cursor: pointer; }
+    .pm-cell[data-level="high"] .pm-chip { background: var(--danger); color: var(--surface); }
+    .pm-chip:hover, .pm-chip:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+    .pm-ylabel { writing-mode: vertical-rl; transform: rotate(180deg); font-size: var(--step--1); color: var(--ink-soft); display: grid; place-items: center; }
+    .pm-xlabel { font-size: var(--step--1); color: var(--ink-soft); text-align: center; }
+    .pm-axis-title { grid-column: 2 / -1; text-align: center; font-weight: 700; font-size: var(--step--1); }
+    .pm-yaxis-title { font-weight: 700; font-size: var(--step--1); margin: 0; }
+    .pm-key { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; margin: 1rem 0 0; font-size: var(--step--1); }
+    .pm-key span::before { content: ""; display: inline-block; width: 0.9rem; height: 0.9rem; border-radius: 3px; margin-right: 0.35rem; vertical-align: -0.1rem; border: 1px solid var(--line); }
+    .pm-key .k-high::before { background: var(--risk-high); }
+    .pm-key .k-mid::before { background: var(--risk-mid); }
+    .pm-key .k-low::before { background: var(--risk-low); }
+    .pm-summary { margin-top: 0.75rem; }
+
+    .pm-plan { margin-top: 1rem; }
+    .pm-plans { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; gap: 1rem; }
+    .pm-plan-item { padding: 1rem; border: 1px solid var(--line); border-left: 5px solid var(--literacy); border-radius: var(--radius-md); background: var(--bg); }
+    .pm-plan-item[data-level="high"] { border-left-color: var(--danger); }
+    .pm-plan-item h3 { margin: 0 0 0.75rem; font-size: var(--step-0); font-family: var(--font-body); }
+    .pm-plan-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem 1rem; }
+    @media (max-width: 860px) { .pm-plan-grid { grid-template-columns: minmax(0, 1fr); } }
+    .pm-plan-grid textarea { min-height: 4.5rem; }
+
+    @media print {
+      .pm-edit { display: none; }
+      .pm-layout { display: block; }
+      .pm-view { position: static; }
+      .pm-plan-item { break-inside: avoid; }
+    }
+  </style>
+</head>
+
+<body class="cat-design" data-tool="pre-mortem">
+
+<main id="main" class="page tool-page">
+
+  <header class="tool-intro">
+    <p class="tool-intro__cat"><a href="../../#design" data-pl-category-link data-pl="category">Design thinking</a></p>
+    <h1 data-pl="name">Pre-mortem</h1>
+    <p class="lede" data-pl="description">Imagine your project has failed, then work out why before it happens.</p>
+    <dl class="tool-intro__meta">
+      <div><dt>Time</dt><dd data-pl="minutes">15 minutes</dd></div>
+      <div><dt>You leave with</dt><dd data-pl="output">A list of risks and responses</dd></div>
+    </dl>
+  </header>
+
+  <section class="tool-steps" aria-labelledby="how-title">
+    <h2 id="how-title">How it works</h2>
+    <ol>
+      <li>Describe your project and when it should be a success.</li>
+      <li>Jump forward in time. It has failed. Write the headline.</li>
+      <li>List every reason it might have failed. Use the lenses to find blind spots, and don’t hold back.</li>
+      <li>Rate how likely and how damaging each reason is.</li>
+      <li>For the biggest risks, decide on an early warning sign and what you’ll do now.</li>
+    </ol>
+  </section>
+
+  <div class="pm-layout">
+
+    <section class="panel pm-edit" aria-labelledby="edit-title">
+      <h2 id="edit-title">Imagine it failed</h2>
+
+      <div class="pm-block">
+        <div class="pm-two">
+          <div>
+            <label for="project">What’s the project?</label>
+            <input type="text" id="project" maxlength="200" placeholder="For example, a new online booking system for our clinic">
+          </div>
+          <div>
+            <label for="horizon">Jump forward</label>
+            <select id="horizon">
+              <option value="6">6 months</option>
+              <option value="12">1 year</option>
+              <option value="24">2 years</option>
+              <option value="36">3 years</option>
+            </select>
+          </div>
+        </div>
+        <div class="pm-headline-box">
+          <p id="headline-date"></p>
+          <label for="headline">Write the headline about its failure</label>
+          <textarea id="headline" maxlength="160" placeholder="For example, clinic’s new booking system blamed as patients give up on appointments"></textarea>
+        </div>
+        <div class="pm-row">
+          <p class="hint" style="margin:0">A real project from your work is best.</p>
+          <button class="btn btn--small" type="button" id="example-btn">Try an example</button>
+        </div>
+      </div>
+
+      <form class="pm-block" id="add-form">
+        <p class="label" id="lens-label">Look through a lens</p>
+        <div class="pm-lenses" id="lenses" role="group" aria-labelledby="lens-label"></div>
+        <p class="pm-lens-q" id="lens-q" aria-live="polite"></p>
+        <label for="new-reason">Why did it fail?</label>
+        <textarea id="new-reason" maxlength="200" placeholder="It failed because…"></textarea>
+        <div class="pm-row">
+          <p class="hint" style="margin:0" id="reason-count"></p>
+          <button class="btn btn--primary" type="submit">Add reason</button>
+        </div>
+      </form>
+
+      <div class="pm-block">
+        <ol class="pm-list" id="list" aria-label="Reasons for failure"></ol>
+        <p class="empty" id="list-empty">No reasons yet. Most teams find eight to twelve once they get going.</p>
+      </div>
+    </section>
+
+    <section class="panel pm-view" id="workspace" aria-labelledby="grid-title">
+      <h2 id="grid-title">Risk map</h2>
+      <p class="hint" id="view-project" style="margin-top:-0.25rem"></p>
+      <p class="pm-yaxis-title">How damaging</p>
+      <div class="pm-grid" id="grid" aria-hidden="true"></div>
+      <div class="pm-key"><span class="k-high">Act now</span><span class="k-mid">Plan for it</span><span class="k-low">Keep an eye on it</span></div>
+      <div class="pm-summary" id="summary" aria-live="polite"></div>
+    </section>
+
+  </div>
+
+  <section class="panel pm-plan" aria-labelledby="plan-title">
+    <h2 id="plan-title">Your response plan</h2>
+    <p>The risks worth planning for, biggest first.</p>
+    <ol class="pm-plans" id="plans"></ol>
+    <p class="empty" id="plans-empty">Rate your reasons and the ones to act on or plan for will appear here.</p>
+  </section>
+
+  <section class="tool-actions" aria-label="Save and export">
+    <p class="tool-actions__note">Your work saves automatically in this browser.</p>
+    <div class="tool-actions__buttons">
+      <button class="btn btn--small" type="button" data-action="image">Download image</button>
+      <button class="btn btn--small" type="button" data-action="summary">Download summary</button>
+      <button class="btn btn--small" type="button" data-action="save">Save a copy</button>
+      <button class="btn btn--small" type="button" data-action="open">Open a copy</button>
+      <button class="btn btn--small" type="button" data-action="print">Print or save as PDF</button>
+      <button class="btn btn--small btn--danger" type="button" data-action="reset">Start over</button>
+    </div>
+  </section>
+
+  <section class="reflect" aria-labelledby="reflect-title">
+    <h2 id="reflect-title">Reflect</h2>
+    <p>Jot down a few thoughts. These save with the rest of your work.</p>
+    <ol>
+      <li>
+        <label for="r1">Which reason for failure was hardest to admit or say out loud? Why?</label>
+        <textarea id="r1" data-reflect="hardest"></textarea>
+      </li>
+      <li>
+        <label for="r2">Who wasn’t part of this pre-mortem but should be? What might they see that you can’t?</label>
+        <textarea id="r2" data-reflect="who"></textarea>
+      </li>
+      <li>
+        <label for="r3">What’s one thing you’ll do differently this week because of it?</label>
+        <textarea id="r3" data-reflect="change"></textarea>
+      </li>
+    </ol>
+  </section>
+
+</main>
+
+<script src="../../assets/js/tools.js"></script>
+<script src="../../assets/js/playlab.js"></script>
+
+<script>
+(function () {
+  "use strict";
+
+  var TOOL_ID = "pre-mortem";
+  var MAX = 15;
+
+  var LENSES = [
+    { id: "people", name: "People", q: "Who didn’t use it, support it, or stick around?" },
+    { id: "tech", name: "Technology", q: "What broke, didn’t connect, or couldn’t cope?" },
+    { id: "money", name: "Money", q: "Where did costs blow out or funding fall through?" },
+    { id: "timing", name: "Timing", q: "What happened too early, too late, or at the worst moment?" },
+    { id: "outside", name: "Outside world", q: "What changed around you: rules, competitors, the economy, the weather?" },
+    { id: "trust", name: "Ethics and trust", q: "Who was harmed, left out, or lost trust in you?" }
+  ];
+  var LEVELS = ["", "Low", "Medium", "High"];
+  var BAND = {
+    high: { name: "Act now" },
+    mid: { name: "Plan for it" },
+    low: { name: "Keep an eye on it" }
+  };
+
+  var EXAMPLE = {
+    project: "A new online booking system for our community health clinic",
+    horizon: 12,
+    headline: "Clinic’s new booking system blamed as patients give up on appointments",
+    items: [
+      ["people", "Older patients found it hard to use and stopped booking altogether.", 3, 3],
+      ["tech", "It didn’t connect to our patient records, so staff entered everything twice.", 2, 3],
+      ["money", "Ongoing licence costs were much higher than we budgeted for.", 2, 2],
+      ["timing", "We launched in the middle of winter flu season, when staff were stretched.", 2, 2],
+      ["trust", "Patients worried about where their health information was being stored.", 2, 3],
+      ["outside", "A national booking system was announced six months after we launched.", 1, 2]
+    ]
+  };
+
+  var EMPTY = { project: "", horizon: 12, headline: "", lens: "people", items: [], reflect: {} };
+  function fresh() { return JSON.parse(JSON.stringify(EMPTY)); }
+  var store = PlayLab.store(TOOL_ID);
+  var state = Object.assign(fresh(), store.get("state", {}) || {});
+  function save() { store.set("state", state); }
+
+  var esc = PlayLab.escape;
+  var $ = function (id) { return document.getElementById(id); };
+  function lens(id) { return LENSES.find(function (l) { return l.id === id; }) || LENSES[0]; }
+  function level(it) {
+    if (!it.like || !it.impact) return "";
+    var s = it.like * it.impact;
+    return s >= 6 ? "high" : s >= 3 ? "mid" : "low";
+  }
+  function newItem(l, text, like, impact) {
+    return { id: "r" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), lens: l, text: text, like: like || 0, impact: impact || 0, sign: "", action: "", owner: "" };
+  }
+
+  /* ==================================================================
+     Project and headline
+     ================================================================== */
+  function failDate() {
+    var d = new Date(); d.setMonth(d.getMonth() + state.horizon);
+    return d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  }
+  function renderHeader() {
+    $("headline-date").textContent = "It’s " + failDate() + ". The project has failed.";
+    $("view-project").textContent = state.project.trim() ? state.project.trim() + ", looking ahead to " + failDate() + "." : "";
+  }
+  $("project").addEventListener("input", function (e) { state.project = e.target.value; save(); renderHeader(); });
+  $("horizon").addEventListener("change", function (e) { state.horizon = Number(e.target.value); save(); renderHeader(); });
+  $("headline").addEventListener("input", function (e) { state.headline = e.target.value; save(); });
+
+  $("example-btn").addEventListener("click", function () {
+    if ((state.project.trim() || state.items.length) && !confirm("Replace your project and reasons with an example?")) return;
+    state.project = EXAMPLE.project; state.horizon = EXAMPLE.horizon; state.headline = EXAMPLE.headline;
+    state.items = EXAMPLE.items.map(function (x) { return newItem(x[0], x[1], x[2], x[3]); });
+    save(); renderAll();
+    PlayLab.toast("Example loaded. Try changing the ratings");
+  });
+
+  /* ==================================================================
+     Lenses and adding reasons
+     ================================================================== */
+  function renderLenses() {
+    $("lenses").innerHTML = LENSES.map(function (l) {
+      return '<button type="button" data-lens="' + l.id + '" aria-pressed="' + (state.lens === l.id) + '">' + esc(l.name) + "</button>";
+    }).join("");
+    $("lens-q").textContent = lens(state.lens).q;
+  }
+  $("lenses").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-lens]"); if (!b) return;
+    state.lens = b.dataset.lens; save();
+    $("lenses").querySelectorAll("[data-lens]").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+    $("lens-q").textContent = lens(state.lens).q;
+  });
+
+  $("add-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var input = $("new-reason"), v = input.value.trim();
+    if (!v) { PlayLab.toast("Write a reason first"); input.focus(); return; }
+    if (state.items.length >= MAX) { PlayLab.toast(MAX + " reasons is plenty. Focus on the biggest"); return; }
+    var it = newItem(state.lens, v);
+    state.items.push(it);
+    input.value = "";
+    save(); renderList(); renderGrid(); renderPlans();
+    input.focus();
+    PlayLab.toast("Added. Keep going, then rate them below");
+  });
+
+  /* ==================================================================
+     Reasons list
+     ================================================================== */
+  function segHTML(it, field, label) {
+    return '<div class="pm-rate"><p id="' + field + "-l-" + it.id + '">' + label + "</p>" +
+      '<div class="pm-seg" role="group" aria-labelledby="' + field + "-l-" + it.id + '">' +
+      [1, 2, 3].map(function (v) {
+        return '<button type="button" data-rate="' + field + '" data-val="' + v + '" aria-pressed="' + (it[field] === v) + '">' + LEVELS[v] + "</button>";
+      }).join("") + "</div></div>";
+  }
+  function tagsHTML(it) {
+    var lv = level(it);
+    return '<span class="pm-tag">' + esc(lens(it.lens).name) + "</span>" +
+      (lv ? '<span class="pm-tag pm-tag--' + lv + '">' + esc(BAND[lv].name) + "</span>" : '<span class="pm-tag">Not rated yet</span>');
+  }
+  function renderList() {
+    $("list").innerHTML = state.items.map(function (it, i) {
+      return '<li class="pm-item" id="item-' + it.id + '" data-id="' + it.id + '" data-level="' + level(it) + '">' +
+        '<div class="pm-item__top"><span class="pm-num" aria-hidden="true">' + (i + 1) + "</span>" +
+        '<div><label class="visually-hidden" for="txt-' + it.id + '">Reason ' + (i + 1) + "</label>" +
+        '<textarea id="txt-' + it.id + '" data-field="text" maxlength="200">' + esc(it.text) + "</textarea></div>" +
+        '<button class="btn btn--quiet btn--small" type="button" data-remove aria-label="Remove reason ' + (i + 1) + '">Remove</button></div>' +
+        '<p class="pm-tags" data-tags>' + tagsHTML(it) + "</p>" +
+        '<div class="pm-rates">' + segHTML(it, "like", "How likely?") + segHTML(it, "impact", "How damaging?") + "</div></li>";
+    }).join("");
+    $("list-empty").hidden = state.items.length > 0;
+    var n = state.items.length;
+    $("reason-count").textContent = n ? n + (n === 1 ? " reason so far" : " reasons so far") + (n < 6 ? ". Try another lens" : "") : "";
+  }
+  function findItem(el) {
+    var li = el.closest("[data-id]");
+    return li ? { li: li, it: state.items.find(function (x) { return x.id === li.dataset.id; }) } : null;
+  }
+  $("list").addEventListener("input", function (e) {
+    if (e.target.dataset.field !== "text") return;
+    var f = findItem(e.target); f.it.text = e.target.value; save(); renderPlans(true);
+  });
+  $("list").addEventListener("click", function (e) {
+    var f = findItem(e.target); if (!f) return;
+    var r = e.target.closest("[data-rate]");
+    if (r) {
+      f.it[r.dataset.rate] = Number(r.dataset.val);
+      f.li.querySelectorAll('[data-rate="' + r.dataset.rate + '"]').forEach(function (b) { b.setAttribute("aria-pressed", String(b === r)); });
+      f.li.dataset.level = level(f.it);
+      f.li.querySelector("[data-tags]").innerHTML = tagsHTML(f.it);
+      save(); renderGrid(); renderPlans();
+    }
+    if (e.target.closest("[data-remove]")) {
+      if (!confirm("Remove this reason?")) return;
+      state.items = state.items.filter(function (x) { return x !== f.it; });
+      save(); renderList(); renderGrid(); renderPlans();
+      $("new-reason").focus();
+    }
+  });
+
+  /* ==================================================================
+     Risk grid: rows are damage (high at top), columns are likelihood
+     ================================================================== */
+  function renderGrid() {
+    var html = "";
+    [3, 2, 1].forEach(function (imp) {
+      html += '<div class="pm-ylabel">' + LEVELS[imp] + "</div>";
+      [1, 2, 3].forEach(function (like) {
+        var s = imp * like, lv = s >= 6 ? "high" : s >= 3 ? "mid" : "low";
+        var chips = state.items.map(function (it, i) {
+          return it.like === like && it.impact === imp ? '<button class="pm-chip" type="button" data-go="' + it.id + '" tabindex="-1">' + (i + 1) + "</button>" : "";
+        }).join("");
+        html += '<div class="pm-cell" data-level="' + lv + '">' + chips + "</div>";
+      });
+    });
+    html += "<div></div>" + [1, 2, 3].map(function (v) { return '<div class="pm-xlabel">' + LEVELS[v] + "</div>"; }).join("");
+    html += '<div class="pm-axis-title">How likely</div>';
+    $("grid").innerHTML = html;
+    renderSummary();
+  }
+  function renderSummary() {
+    var groups = { high: [], mid: [], low: [] }, unrated = [];
+    state.items.forEach(function (it, i) { var lv = level(it); (lv ? groups[lv] : unrated).push(i + 1); });
+    if (!state.items.length) { $("summary").innerHTML = "<p>Your reasons will appear on the map once you rate them.</p>"; return; }
+    $("summary").innerHTML = ["high", "mid", "low"].map(function (k) {
+      return "<p style=\"margin:0.2rem 0\"><strong>" + BAND[k].name + ":</strong> " + (groups[k].length ? "reason " + groups[k].join(", ") : "none") + "</p>";
+    }).join("") + (unrated.length ? '<p style="margin:0.2rem 0"><strong>Not rated yet:</strong> reason ' + unrated.join(", ") + "</p>" : "");
+  }
+  $("grid").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-go]"); if (!b) return;
+    var li = $("item-" + b.dataset.go); if (!li) return;
+    li.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    li.querySelector("textarea").focus({ preventScroll: true });
+    li.classList.add("is-flash"); setTimeout(function () { li.classList.remove("is-flash"); }, 1200);
+  });
+
+  /* ==================================================================
+     Response plan
+     ================================================================== */
+  function planItems() {
+    return state.items.map(function (it, i) { return { it: it, n: i + 1 }; })
+      .filter(function (x) { var lv = level(x.it); return lv === "high" || lv === "mid"; })
+      .sort(function (a, b) { return b.it.like * b.it.impact - a.it.like * a.it.impact || a.n - b.n; });
+  }
+  var lastKey = "";
+  function renderPlans(textOnly) {
+    var list = planItems(), key = list.map(function (x) { return x.it.id + level(x.it); }).join(",");
+    if (key === lastKey) {
+      list.forEach(function (x) { var h = document.querySelector('#plans [data-id="' + x.it.id + '"] h3'); if (h) h.textContent = x.n + ". " + x.it.text; });
+      return;
+    }
+    lastKey = key;
+    $("plans").innerHTML = list.map(function (x) {
+      var it = x.it, lv = level(it);
+      return '<li class="pm-plan-item" data-id="' + it.id + '" data-level="' + lv + '">' +
+        "<h3>" + esc(x.n + ". " + it.text) + "</h3>" +
+        '<div class="pm-plan-grid">' +
+          '<div><label for="sign-' + it.id + '">Early warning sign</label><textarea id="sign-' + it.id + '" data-pfield="sign" maxlength="300" placeholder="What would you notice first?">' + esc(it.sign) + "</textarea></div>" +
+          '<div><label for="act-' + it.id + '">What we’ll do now</label><textarea id="act-' + it.id + '" data-pfield="action" maxlength="300" placeholder="How could you prevent it or soften it?">' + esc(it.action) + "</textarea></div>" +
+          '<div><label for="own-' + it.id + '">Who’s responsible</label><textarea id="own-' + it.id + '" data-pfield="owner" maxlength="120">' + esc(it.owner) + "</textarea></div>" +
+        "</div></li>";
+    }).join("");
+    $("plans-empty").hidden = list.length > 0;
+  }
+  $("plans").addEventListener("input", function (e) {
+    var li = e.target.closest("[data-id]"), f = e.target.dataset.pfield; if (!li || !f) return;
+    var it = state.items.find(function (x) { return x.id === li.dataset.id; });
+    it[f] = e.target.value; save();
+  });
+
+  /* ---------- Reflections ---------- */
+  var reflectFields = document.querySelectorAll("[data-reflect]");
+  function renderReflect() { reflectFields.forEach(function (f) { f.value = state.reflect[f.dataset.reflect] || ""; }); }
+  reflectFields.forEach(function (f) {
+    f.addEventListener("input", function () { state.reflect[f.dataset.reflect] = f.value; save(); });
+  });
+
+  /* ==================================================================
+     Save and export
+     ================================================================== */
+  function summary() {
+    var lines = [
+      "# Pre-mortem: " + (state.project.trim() || "Untitled project"),
+      "",
+      "Futures PlayLab, academyEX. Created " + new Date().toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }) + ".",
+      "",
+      "Imagined failure date: " + failDate() + ".",
+      "",
+      "> " + (state.headline.trim() || "No headline written yet."),
+      ""
+    ];
+    ["high", "mid", "low", ""].forEach(function (k) {
+      var list = state.items.map(function (it, i) { return { it: it, n: i + 1 }; }).filter(function (x) { return level(x.it) === k; });
+      if (!list.length) return;
+      lines.push("## " + (k ? BAND[k].name : "Not rated yet"), "");
+      list.forEach(function (x) {
+        var it = x.it;
+        lines.push(x.n + ". " + it.text + " _(" + lens(it.lens).name + (it.like ? "; likelihood " + LEVELS[it.like].toLowerCase() + ", damage " + LEVELS[it.impact || 0].toLowerCase() : "") + ")_");
+        if (k === "high" || k === "mid") {
+          if (it.sign.trim()) lines.push("   - Warning sign: " + it.sign.trim());
+          if (it.action.trim()) lines.push("   - What we’ll do now: " + it.action.trim());
+          if (it.owner.trim()) lines.push("   - Responsible: " + it.owner.trim());
+        }
+      });
+      lines.push("");
+    });
+    lines.push("## Reflections", "");
+    document.querySelectorAll(".reflect label").forEach(function (lab) {
+      var key = $(lab.htmlFor).dataset.reflect;
+      lines.push("**" + lab.textContent + "**", "", (state.reflect[key] || "").trim() || "_No answer yet._", "");
+    });
+    return lines.join("\n");
+  }
+
+  var actions = {
+    image: function () {
+      if (!state.items.length) { PlayLab.toast("Add a reason first, then download your risk map"); return; }
+      PlayLab.export.elementToPNG($("workspace"), PlayLab.export.filename(TOOL_ID, "png"))
+        .then(function () { PlayLab.toast("Image downloaded"); })
+        .catch(function (err) { PlayLab.toast(err.message); });
+    },
+    summary: function () {
+      PlayLab.export.markdown(PlayLab.export.filename(TOOL_ID + "-summary", "md"), summary());
+      PlayLab.toast("Summary downloaded");
+    },
+    save: function () {
+      PlayLab.export.saveFile(TOOL_ID, state);
+      PlayLab.toast("Copy saved to your downloads");
+    },
+    open: function () {
+      PlayLab.export.openSaveFile(TOOL_ID).then(function (data) {
+        state = Object.assign(fresh(), data);
+        save(); renderAll();
+        PlayLab.toast("Copy opened");
+      }).catch(function (err) {
+        if (err.message !== "cancelled") PlayLab.toast(err.message);
+      });
+    },
+    print: function () { PlayLab.export.print(); },
+    reset: function () {
+      if (!confirm("Start over? This clears your project, reasons, plan and reflections from this browser. Save a copy first if you want to keep them.")) return;
+      store.clear();
+      state = fresh();
+      renderAll();
+      PlayLab.toast("Cleared. Ready for a fresh start");
+    }
+  };
+  document.querySelectorAll("[data-action]").forEach(function (btn) {
+    btn.addEventListener("click", function () { actions[btn.dataset.action](); });
+  });
+
+  function renderAll() {
+    $("project").value = state.project;
+    $("horizon").value = String(state.horizon);
+    $("headline").value = state.headline;
+    lastKey = "";
+    renderHeader(); renderLenses(); renderList(); renderGrid(); renderPlans(); renderReflect();
+  }
+  renderAll();
+})();
+</script>
+</body>
+</html>

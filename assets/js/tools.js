@@ -85,7 +85,7 @@ window.PLAYLAB_TOOLS = {
       description: "Start from a future you want and work backwards to what needs to happen today.",
       minutes: 20,
       output: "A step-by-step timeline",
-      status: "planned"
+      status: "live"
     },
 
     /* ---------- Design thinking ---------- */
@@ -117,7 +117,7 @@ window.PLAYLAB_TOOLS = {
       description: "Imagine your project has failed, then work out why before it happens.",
       minutes: 15,
       output: "A list of risks and responses",
-      status: "planned"
+      status: "live"
     },
     {
       id: "stakeholder-map",

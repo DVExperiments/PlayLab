@@ -407,9 +407,9 @@ textarea { min-height: 6rem; resize: vertical; line-height: 1.5; }
   position: fixed; left: 50%; bottom: 1.5rem; z-index: 200;
   transform: translate(-50%, 1rem); opacity: 0; pointer-events: none;
   background: var(--ink); color: var(--bg);
-  padding: 0.7rem 1.25rem; border-radius: 999px; font-weight: 700;
+  padding: 0.7rem 1.25rem; border-radius: 1.5rem; font-weight: 700;
   box-shadow: var(--shadow); transition: opacity 0.2s, transform 0.2s;
-  max-width: calc(100vw - 2rem); text-align: center;
+  width: max-content; max-width: calc(100vw - 2rem); text-align: center;
 }
 .pl-toast.is-visible { opacity: 1; transform: translate(-50%, 0); }
 
