@@ -45,7 +45,7 @@ window.PLAYLAB_TOOLS = {
       description: "Map the ripple effects of a change, out to the consequences of its consequences.",
       minutes: 15,
       output: "A consequences map",
-      status: "planned"
+      status: "live"
     },
     {
       id: "futures-cone",

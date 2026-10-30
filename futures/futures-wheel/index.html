@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="en-NZ">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Futures Wheel | Futures PlayLab</title>
+  <meta name="description" content="Map the ripple effects of a change, out to the consequences of its consequences.">
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/css/playlab.css">
+  <script>try{var t=localStorage.getItem("playlab:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+  <style>
+    /* ---------- Tone colours (positive, negative, uncertain) ---------- */
+    body { --pos: var(--design); --pos-tint: var(--design-tint); --neg: var(--danger); --neg-tint: #FCE4E1; --unc: var(--ink-soft); }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) body { --neg-tint: #3D2226; } }
+    :root[data-theme="dark"] body { --neg-tint: #3D2226; }
+
+    /* ---------- Layout ---------- */
+    .fw-layout { display: grid; grid-template-columns: minmax(19rem, 25rem) minmax(0, 1fr); gap: 1rem; align-items: start; }
+    .fw-layout.is-wide { grid-template-columns: minmax(0, 1fr); }
+    .fw-layout.is-wide .fw-view { order: -1; position: static; }
+    .fw-view { position: sticky; top: 5.5rem; }
+    @media (max-width: 920px) {
+      .fw-layout { grid-template-columns: minmax(0, 1fr); }
+      .fw-view { position: static; }
+      #wide-toggle { display: none; }
+    }
+    .fw-editor h2, .fw-view h2 { font-size: var(--step-2); }
+
+    /* ---------- Editor ---------- */
+    .fw-centre__head, .fw-view__head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; }
+    .fw-centre textarea { font-size: var(--step-1); font-weight: 700; min-height: 6.25rem; }
+    .fw-centre__foot { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .fw-centre__foot .hint { margin: 0.3rem 0 0; flex: 1 1 12rem; }
+    .fw-prompt {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem;
+      margin: 1.25rem 0 0.5rem; padding: 0.75rem 1rem;
+      background: var(--accent-tint); border-radius: var(--radius-md);
+    }
+    .fw-prompt p { margin: 0; }
+
+    .fw-tree, .fw-tree ol { list-style: none; margin: 0; padding: 0; }
+    .fw-tree ol { margin-left: 0.6rem; padding-left: 0.9rem; border-left: 2px solid var(--line); }
+    .fw-card {
+      margin-top: 0.65rem; padding: 0.65rem 0.75rem 0.75rem;
+      background: var(--bg); border: 1px solid var(--line); border-left: 5px solid var(--line);
+      border-radius: var(--radius-md); transition: box-shadow 0.3s;
+    }
+    .fw-card.tone-positive  { border-left-color: var(--pos); }
+    .fw-card.tone-negative  { border-left-color: var(--neg); }
+    .fw-card.tone-uncertain { border-left-color: var(--unc); border-left-style: dashed; }
+    .fw-card.is-flash { box-shadow: 0 0 0 3px var(--accent); }
+    .fw-card__head { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+    .fw-card__head label { margin: 0; font-size: var(--step--1); color: var(--ink-soft); }
+    .fw-card textarea { min-height: 3.2rem; margin-top: 0.3rem; }
+    .fw-card__foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
+    .fw-tone { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+    .fw-tone button {
+      font: inherit; font-size: 0.82rem; font-weight: 700; cursor: pointer;
+      min-height: 32px; padding: 0.15rem 0.65rem;
+      border-radius: 999px; border: 1.5px solid var(--line);
+      background: var(--surface); color: var(--ink);
+    }
+    .fw-tone button:hover { border-color: var(--ink); }
+    .fw-tone button[aria-pressed="true"] { color: var(--on-accent); }
+    .fw-tone .t-positive[aria-pressed="true"]  { background: var(--pos); border-color: var(--pos); }
+    .fw-tone .t-negative[aria-pressed="true"]  { background: var(--neg); border-color: var(--neg); }
+    .fw-tone .t-uncertain[aria-pressed="true"] { background: var(--unc); border-color: var(--unc); }
+    #add-top { margin-top: 1rem; }
+
+    /* ---------- Wheel ---------- */
+    .fw-summary { color: var(--ink-soft); margin-bottom: 0.75rem; }
+    .fw-wheel { width: 100%; overflow-x: auto; }
+    @media (max-width: 920px) { .fw-svg { min-width: 680px; max-height: none; } }
+    .fw-svg { display: block; width: 100%; height: auto; max-height: calc(100vh - 9rem); }
+    .fw-hint { margin: 0.75rem 0 0; }
+    .fw-layout.is-wide .fw-hint { display: none; }
+    .fw-layout.is-wide .fw-svg { max-height: none; }
+    .fw-svg text { font-family: var(--font-body); font-size: 15px; fill: var(--ink); }
+    .fw-rings circle { fill: none; stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 4 6; }
+    .fw-link { stroke: var(--ink-soft); stroke-opacity: 0.45; stroke-width: 2; }
+    .fw-n { cursor: pointer; }
+    .fw-n:focus { outline: none; }
+    .fw-n rect { fill: var(--surface); stroke: var(--ink-soft); stroke-width: 1.5; }
+    .fw-n.tone-positive rect  { fill: var(--pos-tint); stroke: var(--pos); stroke-width: 2; }
+    .fw-n.tone-negative rect  { fill: var(--neg-tint); stroke: var(--neg); stroke-width: 2; }
+    .fw-n.tone-uncertain rect { fill: var(--surface-2); stroke: var(--unc); stroke-width: 2; stroke-dasharray: 5 4; }
+    .fw-n:hover rect, .fw-n:focus-visible rect { stroke: var(--accent); stroke-width: 3.5; stroke-dasharray: none; }
+    .fw-n .fw-badge circle { stroke: var(--surface); stroke-width: 2; }
+    .fw-n.tone-positive .fw-badge circle  { fill: var(--pos); }
+    .fw-n.tone-negative .fw-badge circle  { fill: var(--neg); }
+    .fw-n.tone-uncertain .fw-badge circle { fill: var(--unc); }
+    .fw-svg .fw-badge text { fill: var(--on-accent); font-weight: 700; font-size: 15px; }
+    .fw-svg .is-empty { fill: var(--ink-soft); }
+    .fw-c rect { fill: var(--accent); stroke: none; }
+    .fw-svg .fw-c text { fill: var(--on-accent); font-weight: 700; font-size: 16px; }
+    .fw-c:hover rect, .fw-c:focus-visible rect { stroke: var(--ink); stroke-width: 3; }
+    .fw-svg .fw-foot { fill: var(--ink-soft); font-size: 13px; }
+
+    .fw-print-outline { display: none; }
+    .fw-print-outline ul { margin: 0.25rem 0; }
+
+    @media print {
+      .fw-editor { display: none; }
+      .fw-layout { display: block; }
+      .fw-view { position: static; }
+      .fw-svg { max-height: none; }
+      .fw-print-outline { display: block; margin-top: 1.5rem; }
+    }
+  </style>
+</head>
+
+<body class="cat-futures" data-tool="futures-wheel">
+
+<main id="main" class="page tool-page">
+
+  <header class="tool-intro">
+    <p class="tool-intro__cat"><a href="../../#futures" data-pl-category-link data-pl="category">Futures thinking</a></p>
+    <h1 data-pl="name">Futures Wheel</h1>
+    <p class="lede" data-pl="description">Map the ripple effects of a change, out to the consequences of its consequences.</p>
+    <dl class="tool-intro__meta">
+      <div><dt>Time</dt><dd data-pl="minutes">15 minutes</dd></div>
+      <div><dt>You leave with</dt><dd data-pl="output">A consequences map</dd></div>
+    </dl>
+  </header>
+
+  <section class="tool-steps" aria-labelledby="how-title">
+    <h2 id="how-title">How it works</h2>
+    <ol>
+      <li>Write a change at the centre: a trend, a technology or a decision. The more specific, the better.</li>
+      <li>Add direct consequences. What happens because of this change?</li>
+      <li>For each one, keep asking “and then what?” to add second and third-order consequences.</li>
+      <li>Mark each consequence as positive, negative or uncertain, and notice who it’s positive or negative for.</li>
+      <li>Reflect on what you found, then download your wheel.</li>
+    </ol>
+  </section>
+
+  <div class="fw-layout" id="fw-layout">
+
+    <section class="panel fw-editor" aria-labelledby="build-title">
+      <h2 id="build-title">Build your wheel</h2>
+
+      <div class="fw-centre">
+        <label for="centre-input">The change at the centre</label>
+        <textarea id="centre-input" rows="3" maxlength="110" placeholder="For example, a four-day working week becomes standard in Aotearoa" aria-describedby="centre-hint"></textarea>
+        <div class="fw-centre__foot">
+          <p class="hint" id="centre-hint">Keep it specific. A clear change leads to sharper consequences.</p>
+          <button class="btn btn--small" type="button" id="example-btn">Try an example</button>
+        </div>
+      </div>
+
+      <div class="fw-prompt" aria-live="polite">
+        <p><strong>Stuck?</strong> <span id="prompt-text"></span></p>
+        <button class="btn btn--small" type="button" id="prompt-btn">Another question</button>
+      </div>
+
+      <ol class="fw-tree" id="fw-tree" aria-label="Consequences"></ol>
+      <p class="empty" id="fw-tree-empty">No consequences yet. Start with what would happen as a direct result of your change.</p>
+      <button class="btn btn--primary" type="button" id="add-top">Add a direct consequence</button>
+    </section>
+
+    <section class="panel fw-view" id="workspace" aria-labelledby="view-title">
+      <div class="fw-view__head">
+        <h2 id="view-title">Your wheel</h2>
+        <button class="btn btn--small no-print" type="button" id="wide-toggle" aria-pressed="false">Wide view</button>
+      </div>
+      <p class="fw-summary" id="fw-summary"></p>
+      <div class="fw-wheel" id="fw-wheel"></div>
+      <p class="hint fw-hint no-print" id="fw-hint" hidden></p>
+      <div class="fw-print-outline" id="fw-print-outline"></div>
+    </section>
+
+  </div>
+
+  <section class="tool-actions" aria-label="Save and export">
+    <p class="tool-actions__note">Your work saves automatically in this browser.</p>
+    <div class="tool-actions__buttons">
+      <button class="btn btn--small" type="button" data-action="image">Download image</button>
+      <button class="btn btn--small" type="button" data-action="outline">Download outline</button>
+      <button class="btn btn--small" type="button" data-action="save">Save a copy</button>
+      <button class="btn btn--small" type="button" data-action="open">Open a copy</button>
+      <button class="btn btn--small" type="button" data-action="print">Print or save as PDF</button>
+      <button class="btn btn--small btn--danger" type="button" data-action="reset">Start over</button>
+    </div>
+  </section>
+
+  <section class="reflect" aria-labelledby="reflect-title">
+    <h2 id="reflect-title">Reflect</h2>
+    <p>Jot down a few thoughts. These save with the rest of your work.</p>
+    <ol>
+      <li>
+        <label for="r1">Which second or third-order consequence surprised you most? Why didn’t you see it straight away?</label>
+        <textarea id="r1" data-reflect="surprise"></textarea>
+      </li>
+      <li>
+        <label for="r2">Who benefits from this change, and who carries the costs? Whose perspective is missing from your wheel?</label>
+        <textarea id="r2" data-reflect="who"></textarea>
+      </li>
+      <li>
+        <label for="r3">What could your organisation do now to prepare for, or help shape, one of these consequences?</label>
+        <textarea id="r3" data-reflect="action"></textarea>
+      </li>
+    </ol>
+  </section>
+
+</main>
+
+<script src="../../assets/js/tools.js"></script>
+<script src="../../assets/js/playlab.js"></script>
+
+<script>
+(function () {
+  "use strict";
+
+  var TOOL_ID = "futures-wheel";
+  var EMPTY = { centre: "", nodes: [], reflect: {} };
+  var MAX_CHILDREN = { 0: 8, 1: 5, 2: 5 };   // keyed by the parent's depth (0 = the centre)
+  var DEPTH_NAME = ["The change", "Direct consequence", "Second-order consequence", "Third-order consequence"];
+  var TONES = [
+    { id: "positive", sym: "+", label: "Positive" },
+    { id: "negative", sym: "−", label: "Negative" },
+    { id: "uncertain", sym: "?", label: "Uncertain" }
+  ];
+  var EXAMPLES = [
+    "AI assistants handle most routine office admin",
+    "A four-day working week becomes standard in Aotearoa",
+    "Lab-grown meat becomes cheaper than farmed meat",
+    "Every learner has a personal AI tutor",
+    "Driverless trucks carry freight along State Highway 1",
+    "Rising seas force several coastal towns to move inland",
+    "Most people work for themselves rather than one employer",
+    "Fake video becomes impossible to tell apart from real video",
+    "Every New Zealander gets a personal carbon budget"
+  ];
+  var PROMPTS = [
+    "Who gains power, and who loses it?",
+    "What happens to jobs and the skills people need?",
+    "How does this change daily life for whānau and communities?",
+    "What does this mean for the environment?",
+    "What new rules or laws might follow?",
+    "What would people start doing that they don’t do now?",
+    "What would break, or stop working?",
+    "Who gets left out or left behind?",
+    "How might people push back against this?",
+    "What new businesses or services might appear?",
+    "What happens to trust between people and institutions?",
+    "How would this play out differently in a city and a small town?"
+  ];
+
+  var esc = PlayLab.escape;
+  function fresh() { return JSON.parse(JSON.stringify(EMPTY)); }
+  var store = PlayLab.store(TOOL_ID);
+  var state = Object.assign(fresh(), store.get("state", {}) || {});
+  function save() { store.set("state", state); }
+
+  var $ = function (id) { return document.getElementById(id); };
+  var tree = $("fw-tree"), centreInput = $("centre-input"), wheel = $("fw-wheel"), layoutEl = $("fw-layout");
+
+  /* ==================================================================
+     Tree helpers
+     ================================================================== */
+  function uid() { return "n" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function newNode() { return { id: uid(), text: "", tone: "", children: [] }; }
+
+  // Find a node by id: returns { node, list (its parent's children), depth, parent }
+  function find(id, list, depth, parent) {
+    list = list || state.nodes; depth = depth || 1;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].id === id) return { node: list[i], list: list, index: i, depth: depth, parent: parent || null };
+      var r = find(id, list[i].children, depth + 1, list[i]);
+      if (r) return r;
+    }
+    return null;
+  }
+  function walk(list, depth, fn) {
+    list.forEach(function (n) { fn(n, depth); walk(n.children, depth + 1, fn); });
+  }
+  function leaves(n) {
+    return n.children.length ? n.children.reduce(function (s, c) { return s + leaves(c); }, 0) : 1;
+  }
+  function tally() {
+    var t = { depth: [0, 0, 0, 0], positive: 0, negative: 0, uncertain: 0, unmarked: 0, total: 0 };
+    walk(state.nodes, 1, function (n, d) {
+      t.depth[d]++; t.total++;
+      if (n.tone) t[n.tone]++; else t.unmarked++;
+    });
+    return t;
+  }
+
+  /* ==================================================================
+     Editor
+     ================================================================== */
+  function nodeHTML(n, depth) {
+    var name = DEPTH_NAME[depth];
+    var placeholder = depth === 1 ? "What happens as a direct result?" : "And then what happens?";
+    var tones = TONES.map(function (t) {
+      return '<button type="button" class="t-' + t.id + '" data-act="tone" data-tone="' + t.id + '" aria-pressed="' + (n.tone === t.id) + '">' +
+        '<span aria-hidden="true">' + t.sym + "</span> " + t.label + "</button>";
+    }).join("");
+    var canAdd = depth < 3;
+    return '<li data-id="' + n.id + '">' +
+      '<div class="fw-card tone-' + (n.tone || "none") + '">' +
+        '<div class="fw-card__head"><label for="t-' + n.id + '">' + name + "</label>" +
+        '<button type="button" class="btn btn--quiet btn--small" data-act="remove" aria-label="Remove this ' + name.toLowerCase() + '">Remove</button></div>' +
+        '<textarea id="t-' + n.id + '" rows="2" maxlength="90" data-act="text" placeholder="' + placeholder + '">' + esc(n.text) + "</textarea>" +
+        '<div class="fw-card__foot">' +
+          '<div class="fw-tone" role="group" aria-label="Is this positive, negative or uncertain?">' + tones + "</div>" +
+          (canAdd ? '<button type="button" class="btn btn--small" data-act="add">Add what happens next</button>' : "") +
+        "</div>" +
+      "</div>" +
+      (n.children.length ? "<ol>" + n.children.map(function (c) { return nodeHTML(c, depth + 1); }).join("") + "</ol>" : "") +
+      "</li>";
+  }
+
+  function renderEditor() {
+    tree.innerHTML = state.nodes.map(function (n) { return nodeHTML(n, 1); }).join("");
+    $("fw-tree-empty").hidden = state.nodes.length > 0;
+    centreInput.value = state.centre;
+  }
+
+  function focusNode(id) {
+    var ta = $("t-" + id);
+    if (!ta) return;
+    ta.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    ta.focus({ preventScroll: true });
+    var card = ta.closest(".fw-card");
+    card.classList.add("is-flash");
+    setTimeout(function () { card.classList.remove("is-flash"); }, 1200);
+  }
+
+  function addChild(list, parentDepth) {
+    if (list.length >= MAX_CHILDREN[parentDepth]) {
+      PlayLab.toast("That’s plenty for one branch. Try going deeper instead");
+      return;
+    }
+    var n = newNode();
+    list.push(n);
+    save(); renderEditor(); renderWheel();
+    focusNode(n.id);
+  }
+
+  $("add-top").addEventListener("click", function () { addChild(state.nodes, 0); });
+
+  tree.addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-act]");
+    if (!btn || btn.tagName === "TEXTAREA") return;
+    var li = btn.closest("li[data-id]");
+    var hit = find(li.dataset.id);
+    if (!hit) return;
+    var act = btn.dataset.act;
+
+    if (act === "tone") {
+      var t = btn.dataset.tone;
+      hit.node.tone = hit.node.tone === t ? "" : t;
+      li.querySelectorAll(":scope > .fw-card [data-act=tone]").forEach(function (b) {
+        b.setAttribute("aria-pressed", String(b.dataset.tone === hit.node.tone));
+      });
+      li.querySelector(":scope > .fw-card").className = "fw-card tone-" + (hit.node.tone || "none");
+      save(); renderWheel();
+    }
+    if (act === "add") addChild(hit.node.children, hit.depth);
+    if (act === "remove") {
+      var count = 0; walk(hit.node.children, 0, function () { count++; });
+      if (count && !confirm("Remove this consequence and the " + count + " that follow from it?")) return;
+      hit.list.splice(hit.index, 1);
+      save(); renderEditor(); renderWheel();
+      var next = hit.parent ? li && document.querySelector('li[data-id="' + hit.parent.id + '"] > .fw-card [data-act=add]') : $("add-top");
+      (next || $("add-top")).focus();
+      PlayLab.toast("Removed");
+    }
+  });
+
+  tree.addEventListener("input", function (e) {
+    if (e.target.dataset.act !== "text") return;
+    var hit = find(e.target.closest("li[data-id]").dataset.id);
+    if (!hit) return;
+    hit.node.text = e.target.value;
+    save(); scheduleWheel();
+  });
+
+  centreInput.addEventListener("input", function () {
+    state.centre = centreInput.value;
+    save(); scheduleWheel();
+  });
+
+  $("example-btn").addEventListener("click", function () {
+    if (state.centre.trim() && !confirm("Replace your change with an example? Your consequences stay as they are.")) return;
+    var options = EXAMPLES.filter(function (x) { return x !== state.centre; });
+    state.centre = options[Math.floor(Math.random() * options.length)];
+    centreInput.value = state.centre;
+    save(); renderWheel();
+    centreInput.focus();
+  });
+
+  var promptIndex = Math.floor(Math.random() * PROMPTS.length);
+  function showPrompt() { $("prompt-text").textContent = PROMPTS[promptIndex]; }
+  $("prompt-btn").addEventListener("click", function () {
+    promptIndex = (promptIndex + 1) % PROMPTS.length;
+    showPrompt();
+  });
+
+  /* ==================================================================
+     Wheel drawing
+     ================================================================== */
+  var NODE_W = 156, CENTRE_W = 228, LINE_H = 18, PAD = 12;
+
+  function wrap(text, maxChars, maxLines) {
+    var words = String(text).trim().split(/\s+/), lines = [], line = "";
+    words.forEach(function (w) {
+      while (w.length > maxChars) {          // break very long words
+        if (line) { lines.push(line); line = ""; }
+        lines.push(w.slice(0, maxChars - 1) + "-"); w = w.slice(maxChars - 1);
+      }
+      if ((line + " " + w).trim().length > maxChars) { lines.push(line); line = w; }
+      else line = (line + " " + w).trim();
+    });
+    if (line) lines.push(line);
+    if (lines.length > maxLines) {
+      lines = lines.slice(0, maxLines);
+      lines[maxLines - 1] = lines[maxLines - 1].replace(/\s*\S{0,3}$/, "") + "…";
+    }
+    return lines;
+  }
+
+  function textBlock(lines, w, cls) {
+    return '<text text-anchor="middle"' + (cls ? ' class="' + cls + '"' : "") + ">" +
+      lines.map(function (l, i) {
+        return '<tspan x="' + (w / 2) + '" y="' + (PAD + 14 + i * LINE_H) + '">' + esc(l) + "</tspan>";
+      }).join("") + "</text>";
+  }
+
+  var wheelQueued = false;
+  function scheduleWheel() {
+    if (wheelQueued) return;
+    wheelQueued = true;
+    requestAnimationFrame(function () { wheelQueued = false; renderWheel(); });
+  }
+
+  function renderWheel() {
+    var t = tally();
+
+    // Ring sizes grow with the number of consequences on each ring
+    var r1 = Math.max(210, t.depth[1] * (NODE_W + 24) / (2 * Math.PI));
+    var r2 = Math.max(r1 + 165, t.depth[2] * (NODE_W + 14) / (2 * Math.PI));
+    var r3 = Math.max(r2 + 165, t.depth[3] * (NODE_W + 14) / (2 * Math.PI));
+    var R = [0, r1, r2, r3];
+
+    var placed = [], links = [];
+    var centre = { x: 0, y: 0 };
+
+    // Each branch gets a slice of the circle in proportion to how many end points it has
+    function place(list, depth, a0, a1, parent) {
+      if (!list.length) return;
+      var span = a1 - a0;
+      if (depth > 1 && span > Math.PI * 1.1) {          // keep branches from wrapping behind the centre
+        var mid = (a0 + a1) / 2; span = Math.PI * 1.1; a0 = mid - span / 2;
+      }
+      var total = list.reduce(function (s, n) { return s + leaves(n); }, 0);
+      var a = a0;
+      list.forEach(function (n) {
+        var s = span * leaves(n) / total, m = a + s / 2;
+        var p = { n: n, depth: depth, x: R[depth] * Math.cos(m), y: R[depth] * Math.sin(m) };
+        p.lines = wrap(n.text || "Not written yet", 18, 4);
+        p.w = NODE_W; p.h = p.lines.length * LINE_H + PAD * 2 - 2;
+        placed.push(p); links.push([parent, p]);
+        place(n.children, depth + 1, a, a + s, p);
+        a += s;
+      });
+    }
+    place(state.nodes, 1, -Math.PI / 2, Math.PI * 1.5, centre);
+
+    var cLines = wrap(state.centre || "Write your change", 19, 5);
+    var cH = cLines.length * 20 + PAD * 2;
+
+    // Work out the drawing's bounds
+    var maxDepth = t.depth[3] ? 3 : t.depth[2] ? 2 : t.depth[1] ? 1 : 0;
+    var minX = -CENTRE_W / 2, maxX = CENTRE_W / 2, minY = -cH / 2, maxY = cH / 2;
+    placed.forEach(function (p) {
+      minX = Math.min(minX, p.x - p.w / 2); maxX = Math.max(maxX, p.x + p.w / 2);
+      minY = Math.min(minY, p.y - p.h / 2); maxY = Math.max(maxY, p.y + p.h / 2);
+    });
+    var outer = R[Math.max(maxDepth, 1)];   // the first ring always shows, as a guide
+    minX = Math.min(minX, -outer); maxX = Math.max(maxX, outer);
+    minY = Math.min(minY, -outer); maxY = Math.max(maxY, outer);
+    var M = 24;
+    var stackFoot = (maxX - minX + 2 * M) < 780;          // narrow wheels get a two-line footer
+    minX -= M; minY -= M; maxX += M; maxY += M + (stackFoot ? 50 : 30);
+    var W = maxX - minX, H = maxY - minY;
+
+    var rings = [1, 2, 3].filter(function (d) { return d === 1 || t.depth[d]; }).map(function (d) {
+      return '<circle cx="0" cy="0" r="' + R[d].toFixed(1) + '"/>';
+    }).join("");
+
+    var lineSvg = links.map(function (l) {
+      return '<line class="fw-link" x1="' + l[0].x.toFixed(1) + '" y1="' + l[0].y.toFixed(1) + '" x2="' + l[1].x.toFixed(1) + '" y2="' + l[1].y.toFixed(1) + '"/>';
+    }).join("");
+
+    var nodeSvg = placed.map(function (p) {
+      var tone = TONES.find(function (x) { return x.id === p.n.tone; });
+      var label = DEPTH_NAME[p.depth] + ": " + (p.n.text || "not written yet") + (tone ? ", " + tone.label.toLowerCase() : "") + ". Select to edit.";
+      return '<g class="fw-n tone-' + (p.n.tone || "none") + '" data-id="' + p.n.id + '" tabindex="0" role="button" aria-label="' + esc(label) + '"' +
+        ' transform="translate(' + (p.x - p.w / 2).toFixed(1) + " " + (p.y - p.h / 2).toFixed(1) + ')">' +
+        '<rect width="' + p.w + '" height="' + p.h + '" rx="10"/>' +
+        textBlock(p.lines, p.w, p.n.text ? "" : "is-empty") +
+        (tone ? '<g class="fw-badge"><circle cx="2" cy="2" r="11"/><text x="2" y="7" text-anchor="middle">' + tone.sym + "</text></g>" : "") +
+        "</g>";
+    }).join("");
+
+    var centreSvg = '<g class="fw-c" data-id="centre" tabindex="0" role="button" aria-label="The change: ' + esc(state.centre || "not written yet") + '. Select to edit."' +
+      ' transform="translate(' + (-CENTRE_W / 2) + " " + (-cH / 2) + ')">' +
+      '<rect width="' + CENTRE_W + '" height="' + cH + '" rx="14"/>' +
+      '<text text-anchor="middle">' + cLines.map(function (l, i) {
+        return '<tspan x="' + (CENTRE_W / 2) + '" y="' + (PAD + 16 + i * 20) + '">' + esc(l) + "</tspan>";
+      }).join("") + "</text></g>";
+
+    var KEY = "+ positive\u00A0\u00A0\u00A0 − negative\u00A0\u00A0\u00A0 ? uncertain";
+    var foot = stackFoot
+      ? '<text class="fw-foot" text-anchor="middle" x="' + ((minX + maxX) / 2) + '" y="' + (maxY - M - 16) + '">' + KEY + "</text>" +
+        '<text class="fw-foot" text-anchor="middle" x="' + ((minX + maxX) / 2) + '" y="' + (maxY - M + 4) + '">Futures Wheel, made in the Futures PlayLab</text>'
+      : '<text class="fw-foot" x="' + (minX + M) + '" y="' + (maxY - M + 4) + '">Futures Wheel, made in the Futures PlayLab</text>' +
+      '<text class="fw-foot" x="' + (maxX - M) + '" y="' + (maxY - M + 4) + '" text-anchor="end">+ positive\u00A0\u00A0\u00A0 − negative\u00A0\u00A0\u00A0 ? uncertain</text>';
+
+    var desc = state.centre ? "Centre: " + state.centre + ". " : "";
+    desc += t.depth[1] + " direct, " + t.depth[2] + " second-order and " + t.depth[3] + " third-order consequences.";
+
+    wheel.innerHTML =
+      '<svg class="fw-svg" xmlns="http://www.w3.org/2000/svg" viewBox="' + [minX, minY, W, H].map(function (v) { return v.toFixed(1); }).join(" ") + '" role="img" aria-labelledby="fw-svg-title fw-svg-desc">' +
+      '<title id="fw-svg-title">Futures wheel' + (state.centre ? ": " + esc(state.centre) : "") + "</title>" +
+      '<desc id="fw-svg-desc">' + esc(desc) + "</desc>" +
+      '<g class="fw-rings">' + rings + "</g>" + lineSvg + nodeSvg + centreSvg + foot + "</svg>";
+
+    renderSummary(t);
+    renderPrintOutline();
+    var hint = $("fw-hint"), narrow = window.innerWidth <= 920;
+    hint.textContent = narrow ? "Scroll sideways to see the whole wheel. Select any box to edit it."
+                              : "Big wheel? Choose Wide view to make it easier to read. Select any box to edit it.";
+    hint.hidden = narrow ? t.total < 1 : t.total < 7;
+  }
+
+  function plural(n, one, many) { return n + " " + (n === 1 ? one : many); }
+  function renderSummary(t) {
+    var el = $("fw-summary");
+    if (!t.total) { el.textContent = "Add a change and some consequences, and your wheel will grow here."; return; }
+    var parts = [];
+    if (t.positive) parts.push(t.positive + " positive");
+    if (t.negative) parts.push(t.negative + " negative");
+    if (t.uncertain) parts.push(t.uncertain + " uncertain");
+    if (t.unmarked) parts.push(t.unmarked + " not yet marked");
+    el.textContent = plural(t.total, "consequence", "consequences") + " across " +
+      plural([1, 2, 3].filter(function (d) { return t.depth[d]; }).length, "ring", "rings") + ": " + parts.join(", ") + ".";
+  }
+
+  // Clicking a box in the wheel jumps to it in the editor
+  function activate(g) {
+    if (g.dataset.id === "centre") {
+      centreInput.scrollIntoView({ block: "center" });
+      centreInput.focus({ preventScroll: true });
+    } else focusNode(g.dataset.id);
+  }
+  wheel.addEventListener("click", function (e) {
+    var g = e.target.closest("[data-id]");
+    if (g) activate(g);
+  });
+  wheel.addEventListener("keydown", function (e) {
+    var g = e.target.closest("[data-id]");
+    if (g && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); activate(g); }
+  });
+
+  /* ---------- Wide view ---------- */
+  var wideBtn = $("wide-toggle");
+  function applyWide(on) {
+    layoutEl.classList.toggle("is-wide", on);
+    wideBtn.setAttribute("aria-pressed", String(on));
+    wideBtn.textContent = on ? "Side-by-side view" : "Wide view";
+  }
+  wideBtn.addEventListener("click", function () {
+    var on = !layoutEl.classList.contains("is-wide");
+    applyWide(on);
+    store.set("wide", on);
+  });
+
+  /* ==================================================================
+     Outline (for printing and the Markdown download)
+     ================================================================== */
+  function toneLabel(n) {
+    var t = TONES.find(function (x) { return x.id === n.tone; });
+    return t ? " (" + t.label.toLowerCase() + ")" : "";
+  }
+  function renderPrintOutline() {
+    function list(nodes) {
+      if (!nodes.length) return "";
+      return "<ul>" + nodes.map(function (n) {
+        return "<li>" + esc(n.text || "Not written yet") + esc(toneLabel(n)) + list(n.children) + "</li>";
+      }).join("") + "</ul>";
+    }
+    $("fw-print-outline").innerHTML = state.nodes.length ? "<h3>Outline</h3>" + list(state.nodes) : "";
+  }
+
+  function outlineMarkdown() {
+    var t = tally();
+    var lines = [
+      "# Futures Wheel: " + (state.centre.trim() || "Untitled change"),
+      "",
+      "Futures PlayLab, academyEX. Created " + new Date().toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }) + ".",
+      "",
+      t.depth[1] + " direct, " + t.depth[2] + " second-order and " + t.depth[3] + " third-order consequences. " +
+        t.positive + " positive, " + t.negative + " negative, " + t.uncertain + " uncertain, " + t.unmarked + " not marked.",
+      "",
+      "## Consequences",
+      ""
+    ];
+    walk(state.nodes, 1, function (n, d) {
+      lines.push("  ".repeat(d - 1) + "- " + (n.text.trim() || "Not written yet") + toneLabel(n));
+    });
+    if (!state.nodes.length) lines.push("_None yet._");
+    lines.push("", "## Reflections", "");
+    document.querySelectorAll(".reflect label").forEach(function (lab) {
+      var key = $(lab.htmlFor).dataset.reflect;
+      lines.push("**" + lab.textContent + "**", "", (state.reflect[key] || "").trim() || "_No answer yet._", "");
+    });
+    return lines.join("\n");
+  }
+
+  /* ---------- Reflections ---------- */
+  var reflectFields = document.querySelectorAll("[data-reflect]");
+  function renderReflect() {
+    reflectFields.forEach(function (f) { f.value = state.reflect[f.dataset.reflect] || ""; });
+  }
+  reflectFields.forEach(function (f) {
+    f.addEventListener("input", function () { state.reflect[f.dataset.reflect] = f.value; save(); });
+  });
+
+  /* ==================================================================
+     Save and export
+     ================================================================== */
+  var actions = {
+    image: function () {
+      var svg = wheel.querySelector("svg");
+      var w = svg.getBoundingClientRect().width || 600;
+      var scale = Math.min(5, Math.max(2, Math.ceil(2400 / w)));
+      PlayLab.export.svgToPNG(svg, PlayLab.export.filename(TOOL_ID, "png"), { scale: scale })
+        .then(function () { PlayLab.toast("Image downloaded"); })
+        .catch(function (err) { PlayLab.toast(err.message); });
+    },
+    outline: function () {
+      PlayLab.export.markdown(PlayLab.export.filename(TOOL_ID + "-outline", "md"), outlineMarkdown());
+      PlayLab.toast("Outline downloaded");
+    },
+    save: function () {
+      PlayLab.export.saveFile(TOOL_ID, state);
+      PlayLab.toast("Copy saved to your downloads");
+    },
+    open: function () {
+      PlayLab.export.openSaveFile(TOOL_ID).then(function (data) {
+        state = Object.assign(fresh(), data);
+        save(); renderAll();
+        PlayLab.toast("Copy opened");
+      }).catch(function (err) {
+        if (err.message !== "cancelled") PlayLab.toast(err.message);
+      });
+    },
+    print: function () { PlayLab.export.print(); },
+    reset: function () {
+      if (!confirm("Start over? This clears your wheel and reflections from this browser. Save a copy first if you want to keep them.")) return;
+      store.clear();
+      state = fresh();
+      applyWide(false);
+      renderAll();
+      PlayLab.toast("Cleared. Ready for a fresh start");
+    }
+  };
+  document.querySelectorAll("[data-action]").forEach(function (btn) {
+    btn.addEventListener("click", function () { actions[btn.dataset.action](); });
+  });
+
+  /* ==================================================================
+     Start
+     ================================================================== */
+  function renderAll() {
+    renderEditor();
+    renderWheel();
+    renderReflect();
+  }
+  applyWide(store.get("wide", false) === true);
+  showPrompt();
+  renderAll();
+  // On small screens, start with the centre of the wheel in view
+  function centreWheel() { wheel.scrollLeft = (wheel.scrollWidth - wheel.clientWidth) / 2; }
+  requestAnimationFrame(centreWheel);
+  window.addEventListener("load", centreWheel);
+})();
+</script>
+</body>
+</html>

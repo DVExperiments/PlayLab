@@ -95,8 +95,8 @@ Store each tool's data as one `state` object, so saving, opening a copy and star
 | Stage | Contents | Status |
 |---|---|---|
 | 1 | Foundation: shared styles and scripts, home, about, template | Done |
-| 2 | Pilots: What Your Browser Knows (done), Futures Wheel (next) | In progress |
-| 3 | Review pilots and adjust the foundation | |
+| 2 | Pilots: What Your Browser Knows, Futures Wheel | Done |
+| 3 | Review pilots and adjust the foundation | Next |
 | 4A | Signal Collider, How Might We Reframer, Futures Cone Sorter | |
 | 4B | Assumption Mapper, Three Horizons Mapper, Backcasting Timeline, Pre-mortem | |
 | 4C | Feed Algorithm Sandbox, Stakeholder Ecosystem Map | |
