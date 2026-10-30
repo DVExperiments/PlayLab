@@ -149,7 +149,7 @@ window.PLAYLAB_TOOLS = {
       description: "Adjust the levers behind a social feed and watch what rises to the top.",
       minutes: 10,
       output: "Notes on how ranking shapes what you see",
-      status: "planned"
+      status: "live"
     },
     {
       id: "biased-classifier",

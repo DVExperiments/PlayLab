@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="en-NZ">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Feed Algorithm Sandbox | Futures PlayLab</title>
+  <meta name="description" content="Adjust the levers behind a social feed and watch what rises to the top.">
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/css/playlab.css">
+  <script>try{var t=localStorage.getItem("playlab:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+  <style>
+    .fs-layout { display: grid; grid-template-columns: minmax(0, 20rem) minmax(0, 1fr); gap: 1rem; align-items: start; }
+    .fs-controls { position: sticky; top: 5.5rem; max-height: calc(100vh - 7rem); overflow-y: auto; }
+    @media (max-width: 900px) { .fs-layout { grid-template-columns: minmax(0, 1fr); } .fs-controls { position: static; max-height: none; } }
+    .fs-controls h2, .fs-main h2 { font-size: var(--step-2); }
+    .fs-controls h3 { font-size: var(--step-0); font-family: var(--font-body); margin: 1.25rem 0 0.5rem; }
+
+    .fs-presets { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .fs-presets [aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+    .fs-lever { margin-top: 0.9rem; }
+    .fs-lever__top { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
+    .fs-lever label { margin: 0; }
+    .fs-lever output { font-family: var(--font-display); font-weight: 700; font-variant-numeric: tabular-nums; min-width: 1.5rem; text-align: right; }
+    .fs-lever p { margin: 0; font-size: var(--step--1); color: var(--ink-soft); }
+    .fs-lever input[type="range"] { width: 100%; accent-color: var(--accent); min-height: 30px; }
+    .fs-interests { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .fs-interests label { display: inline-flex; align-items: center; gap: 0.35rem; margin: 0; padding: 0.25rem 0.65rem; font-weight: 400; font-size: 0.9rem; border: 1.5px solid var(--line); border-radius: 999px; cursor: pointer; }
+    .fs-interests label:has(input:checked) { border-color: var(--accent); background: var(--accent-tint); font-weight: 700; }
+    .fs-interests input { accent-color: var(--accent); }
+    .fs-reveal { display: flex; align-items: flex-start; gap: 0.6rem; margin: 1.25rem 0 0; padding: 0.75rem; border-radius: var(--radius-md); background: var(--surface-2); font-weight: 400; cursor: pointer; }
+    .fs-reveal input { width: 1.2rem; height: 1.2rem; margin-top: 0.15rem; accent-color: var(--accent); flex: none; }
+
+    .fs-main { display: grid; gap: 1rem; }
+    .fs-health__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; margin: 0.75rem 0 0; }
+    @media (max-width: 620px) { .fs-health__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    .fs-stat { padding: 0.65rem 0.8rem; border-radius: var(--radius-md); background: var(--bg); border: 1px solid var(--line); }
+    .fs-stat dt { font-size: var(--step--1); color: var(--ink-soft); }
+    .fs-stat dd { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: var(--step-2); font-variant-numeric: tabular-nums; }
+    .fs-stat.is-warn { border-color: var(--danger); }
+    .fs-stat.is-warn dd { color: var(--danger); }
+    .fs-insight { margin: 0.9rem 0 0; }
+    .fs-insight p { margin: 0 0 0.35rem; }
+
+    .fs-challenges { list-style: none; margin: 0.75rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
+    @media (max-width: 620px) { .fs-challenges { grid-template-columns: minmax(0, 1fr); } }
+    .fs-ch { padding: 0.7rem 0.85rem; border-radius: var(--radius-md); border: 1.5px solid var(--line); background: var(--bg); }
+    .fs-ch.is-met { border-color: var(--design); background: var(--design-tint); }
+    .fs-ch h3 { margin: 0 0 0.2rem; font-size: var(--step-0); font-family: var(--font-body); display: flex; justify-content: space-between; gap: 0.5rem; }
+    .fs-ch p { margin: 0; font-size: var(--step--1); color: var(--ink-soft); }
+    .fs-ch__state { font-size: var(--step--1); font-weight: 700; white-space: nowrap; }
+    .fs-ch.is-met .fs-ch__state { color: var(--design); }
+
+    .fs-feed { list-style: none; margin: 0.75rem 0 0; padding: 0; display: grid; gap: 0.6rem; }
+    .fs-post { display: grid; grid-template-columns: 2.25rem minmax(0, 1fr); gap: 0.75rem; padding: 0.85rem 1rem; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface); }
+    .fs-rank { display: flex; flex-direction: column; align-items: center; gap: 0.1rem; font-family: var(--font-display); font-weight: 800; font-size: var(--step-1); line-height: 1; }
+    .fs-move { font-family: var(--font-body); font-size: 0.75rem; font-weight: 700; }
+    .fs-move.up { color: var(--design); }
+    .fs-move.down { color: var(--danger); }
+    .fs-post__head { display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap; }
+    .fs-avatar { width: 2rem; height: 2rem; border-radius: 999px; display: grid; place-items: center; font-weight: 700; font-size: 0.8rem; color: #fff; flex: none; }
+    .k-family .fs-avatar { background: #B4467A; }
+    .k-friend .fs-avatar { background: #2F6FB3; }
+    .k-group .fs-avatar { background: #5B7A2E; }
+    .k-news .fs-avatar { background: #3E4560; }
+    .k-creator .fs-avatar { background: #8A4FD0; }
+    .k-brand .fs-avatar { background: #A0522D; }
+    .fs-author { font-weight: 700; }
+    .fs-kind, .fs-age { font-size: var(--step--1); color: var(--ink-soft); }
+    .fs-sponsored { font-size: 0.75rem; font-weight: 700; padding: 0.05rem 0.45rem; border-radius: 4px; background: var(--surface-2); }
+    .fs-text { margin: 0.4rem 0 0.35rem; }
+    .fs-post__foot { display: flex; flex-wrap: wrap; gap: 0.35rem 0.75rem; align-items: center; font-size: var(--step--1); }
+    .fs-topic { padding: 0.05rem 0.5rem; border-radius: 999px; background: var(--accent-tint); font-weight: 700; }
+    .fs-known { display: none; flex-wrap: wrap; gap: 0.35rem 0.9rem; color: var(--ink-soft); }
+    .reveal-on .fs-known { display: flex; }
+    .fs-flag { color: var(--danger); font-weight: 700; }
+    .fs-why summary { cursor: pointer; font-weight: 700; font-size: var(--step--1); margin-top: 0.35rem; }
+    .fs-bars { list-style: none; margin: 0.4rem 0 0; padding: 0; display: grid; gap: 0.25rem; font-size: var(--step--1); }
+    .fs-bars li { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr) 2.5rem; gap: 0.5rem; align-items: center; }
+    .fs-bar { height: 0.55rem; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+    .fs-bar span { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+    .fs-bar.neg span { background: var(--danger); }
+    .fs-bars b { text-align: right; font-variant-numeric: tabular-nums; }
+
+    @media print {
+      .fs-controls, .fs-why, .fs-challenges-panel { display: none; }
+      .fs-layout { display: block; }
+      .fs-post { break-inside: avoid; }
+    }
+  </style>
+</head>
+
+<body class="cat-literacy" data-tool="feed-sandbox">
+
+<main id="main" class="page tool-page">
+
+  <header class="tool-intro">
+    <p class="tool-intro__cat"><a href="../../#literacy" data-pl-category-link data-pl="category">Digital literacy</a></p>
+    <h1 data-pl="name">Feed Algorithm Sandbox</h1>
+    <p class="lede" data-pl="description">Adjust the levers behind a social feed and watch what rises to the top.</p>
+    <dl class="tool-intro__meta">
+      <div><dt>Time</dt><dd data-pl="minutes">10 minutes</dd></div>
+      <div><dt>You leave with</dt><dd data-pl="output">Notes on how ranking shapes what you see</dd></div>
+    </dl>
+  </header>
+
+  <section class="tool-steps" aria-labelledby="how-title">
+    <h2 id="how-title">How it works</h2>
+    <ol>
+      <li>This feed has 32 made-up posts. The levers decide which ten you see first, much as real platforms rank posts.</li>
+      <li>Try the presets, then move the levers yourself and watch posts rise and fall.</li>
+      <li>Work through the challenges. Turn on “Show what the platform knows” to see the data behind each post.</li>
+      <li>Open “Why am I seeing this?” on any post, then reflect on who the feed is really designed for.</li>
+    </ol>
+  </section>
+
+  <div class="fs-layout">
+
+    <section class="panel fs-controls" aria-labelledby="controls-title">
+      <h2 id="controls-title">The levers</h2>
+      <h3 id="presets-label">Start from a preset</h3>
+      <div class="fs-presets" id="presets" role="group" aria-labelledby="presets-label"></div>
+      <div id="levers"></div>
+      <h3 id="interests-label">Your interests</h3>
+      <div class="fs-interests" id="interests" role="group" aria-labelledby="interests-label"></div>
+      <label class="fs-reveal"><input type="checkbox" id="reveal"> <span><strong>Show what the platform knows</strong><br><span class="hint">Reveal the engagement, reaction and accuracy data behind each post.</span></span></label>
+    </section>
+
+    <div class="fs-main" id="workspace">
+      <section class="panel" aria-labelledby="health-title">
+        <h2 id="health-title">Feed check</h2>
+        <p class="hint" style="margin:0">What your top 10 posts are made of.</p>
+        <dl class="fs-health__grid" id="health"></dl>
+        <div class="fs-insight" id="insight" aria-live="polite"></div>
+      </section>
+
+
+      <section class="panel" aria-labelledby="feed-title">
+        <h2 id="feed-title">Your feed: top 10</h2>
+        <p class="hint" style="margin:0">People often stop scrolling after a few posts, so the top of a feed matters most.</p>
+        <ol class="fs-feed" id="feed"></ol>
+      </section>
+
+      <section class="panel fs-challenges-panel" aria-labelledby="ch-title">
+        <h2 id="ch-title">Challenges</h2>
+        <p class="hint" style="margin:0">Try to set the levers so each one is met.</p>
+        <ul class="fs-challenges" id="challenges"></ul>
+      </section>
+    </div>
+
+  </div>
+
+  <section class="tool-actions" aria-label="Save and export">
+    <p class="tool-actions__note">Your settings and reflections save automatically in this browser.</p>
+    <div class="tool-actions__buttons">
+      <button class="btn btn--small" type="button" data-action="image">Download image</button>
+      <button class="btn btn--small" type="button" data-action="summary">Download summary</button>
+      <button class="btn btn--small" type="button" data-action="save">Save a copy</button>
+      <button class="btn btn--small" type="button" data-action="open">Open a copy</button>
+      <button class="btn btn--small" type="button" data-action="print">Print or save as PDF</button>
+      <button class="btn btn--small btn--danger" type="button" data-action="reset">Start over</button>
+    </div>
+  </section>
+
+  <section class="reflect" aria-labelledby="reflect-title">
+    <h2 id="reflect-title">Reflect</h2>
+    <p>Jot down a few thoughts. These save with the rest of your work.</p>
+    <ol>
+      <li>
+        <label for="r1">Which lever changed your feed the most? Did anything surprise you?</label>
+        <textarea id="r1" data-reflect="lever"></textarea>
+      </li>
+      <li>
+        <label for="r2">If your platform earned its money from advertising, which settings would you be under pressure to choose? Who would win and who would lose?</label>
+        <textarea id="r2" data-reflect="pressure"></textarea>
+      </li>
+      <li>
+        <label for="r3">What would a feed designed for the public good look like, and who should get to decide its settings?</label>
+        <textarea id="r3" data-reflect="publicgood"></textarea>
+      </li>
+    </ol>
+  </section>
+
+</main>
+
+<script src="../../assets/js/tools.js"></script>
+<script src="../../assets/js/playlab.js"></script>
+
+<script>
+(function () {
+  "use strict";
+
+  var TOOL_ID = "feed-sandbox";
+  var TOP = 10;
+
+  /* ==================================================================
+     The posts (all made up)
+     kind: family, friend, group, news, creator, brand
+     eng = engagement 0–100, out = emotional reaction 0–100
+     ================================================================== */
+  var KINDS = { family: "Family", friend: "Friend", group: "Group", news: "News outlet", creator: "Influencer", brand: "Advertiser" };
+  var TOPICS = { life: "Friends’ news", local: "Local", sport: "Sport", politics: "Politics", health: "Health", tech: "Tech", food: "Food", climate: "Climate", money: "Money", fun: "Entertainment" };
+
+  var POSTS = [
+    ["Aroha (your sister)", "family", "life", "Baby’s first steps today! 🎉", 5, 40, 0],
+    ["Sam Patel", "friend", "local", "Anyone keen for a bush walk in the Waitākere Ranges this Saturday?", 2, 12, 0],
+    ["The Harbour Herald", "news", "local", "Council confirms new bus lanes for the city centre from March.", 8, 35, 30],
+    ["@fitwithmara", "creator", "health", "This one morning drink melts belly fat overnight 😱", 20, 85, 20, 0, 1],
+    ["FreshFeast Meal Kits", "brand", "food", "Dinner sorted in 15 minutes. First box half price.", 1, 10, 0, 1],
+    ["Ōtaki Community Noticeboard", "group", "local", "Lost dog near the river: brown huntaway called Bo. Please share.", 3, 50, 5],
+    ["Kiwi Wire", "news", "money", "Inflation eases slightly, but rents keep climbing.", 6, 30, 35],
+    ["@thetruthunfiltered", "creator", "health", "They don’t want you to know what’s really in the water supply.", 30, 90, 90, 0, 1],
+    ["Hemi Walker", "friend", "life", "Finally finished building the deck. Sore back, happy heart.", 26, 25, 0],
+    ["Southern Daily", "news", "climate", "Researchers trial a new way to protect kauri from dieback.", 14, 20, 5],
+    ["@rantwithrob", "creator", "politics", "This new law is the WORST decision in our history. Share if you agree!", 4, 95, 95],
+    ["Volt Bikes NZ", "brand", "tech", "E-bike winter sale: up to 30% off, this week only.", 10, 15, 0, 1],
+    ["Wellington Foodies", "group", "food", "Best dumplings in town? Go.", 9, 60, 10],
+    ["Kiwi Wire", "news", "sport", "National netball squad named for northern tour.", 5, 70, 15],
+    ["@sciencesimplified", "creator", "tech", "How do noise-cancelling headphones actually work? A 60-second explainer.", 40, 45, 0],
+    ["Dad", "family", "money", "Saw this article about house prices and thought of you.", 50, 5, 10],
+    ["The Harbour Herald", "news", "politics", "Opinion: why the city’s new stadium is a waste of money.", 12, 75, 70],
+    ["@cryptokingnz", "creator", "money", "Turned $500 into $50k in a month. DM me to learn how.", 7, 65, 30, 0, 1],
+    ["Lily Chen", "friend", "life", "Started a new job today! Nervous but excited.", 11, 55, 0],
+    ["Parents of Tauranga", "group", "local", "Is anyone else’s school sending home way too much homework?", 15, 80, 60],
+    ["QuickLoan Now", "brand", "money", "Need cash fast? Approved in minutes.", 2, 8, 0, 1],
+    ["Southern Daily", "news", "climate", "Record January heat linked to warmer ocean temperatures.", 18, 40, 40],
+    ["@climatehoaxexposed", "creator", "climate", "Scientists caught faking temperature data. Wake up!", 22, 88, 92, 0, 1],
+    ["Tama Ngata", "friend", "life", "Our kapa haka group placed second at regionals! So proud of everyone.", 33, 70, 0],
+    ["Kiwi Wire", "news", "money", "Four-day week trial boosted wellbeing without hurting output, study finds.", 28, 50, 25],
+    ["@laughsdaily", "creator", "fun", "When the weather app says ‘sunny’ and you step outside in Wellington…", 3, 92, 5],
+    ["StreamBox", "brand", "fun", "Every series you love, now one low monthly price.", 4, 20, 0, 1],
+    ["Southland Farmers Network", "group", "tech", "Anyone tried the new pasture-monitoring app? Worth it?", 45, 18, 5],
+    ["The Harbour Herald", "news", "health", "Hospital waiting lists grow as winter illness peaks.", 9, 55, 50],
+    ["@wellnesswithjo", "creator", "health", "Five simple stretches for people who sit at a desk all day.", 16, 40, 0],
+    ["Nana", "family", "life", "Lovely to see you all at Sunday lunch ❤️", 60, 30, 0],
+    ["Kiwi Wire", "news", "politics", "Parliament passes changes to tenancy law.", 36, 25, 35]
+  ].map(function (p, i) {
+    return { id: "p" + i, author: p[0], kind: p[1], topic: p[2], text: p[3], hours: p[4], eng: p[5], out: p[6], ad: !!p[7], mis: !!p[8] };
+  });
+
+  var LEVERS = [
+    { id: "recency", name: "Newest", desc: "Newer posts rise." },
+    { id: "engagement", name: "Popular", desc: "Posts with lots of likes, comments and shares rise." },
+    { id: "outrage", name: "Strong reactions", desc: "Posts that provoke strong feelings, especially anger, rise." },
+    { id: "known", name: "People you know", desc: "Posts from family, friends and your groups rise." },
+    { id: "paid", name: "Paid promotion", desc: "Advertisers pay to rise." },
+    { id: "interests", name: "Your interests", desc: "Posts on topics you’ve shown interest in rise." },
+    { id: "reliability", name: "Reliability check", desc: "Posts flagged as misleading sink." }
+  ];
+
+  var PRESETS = [
+    { id: "engage", name: "Maximum engagement", w: { recency: 2, engagement: 10, outrage: 10, known: 1, paid: 5, interests: 3, reliability: 0 } },
+    { id: "newest", name: "Newest first", w: { recency: 10, engagement: 0, outrage: 0, known: 0, paid: 0, interests: 0, reliability: 0 } },
+    { id: "friends", name: "Friends first", w: { recency: 5, engagement: 2, outrage: 0, known: 10, paid: 0, interests: 2, reliability: 0 } },
+    { id: "public", name: "Public good", w: { recency: 5, engagement: 4, outrage: 0, known: 4, paid: 0, interests: 2, reliability: 10 } }
+  ];
+
+  var CHALLENGES = [
+    { id: "attention", name: "The attention machine", desc: "Push the average reaction in your top 10 above 60%.", test: function (m) { return m.outrage > 60; } },
+    { id: "clean", name: "Clean but informed", desc: "No misleading posts in the top 10, with at least two from news outlets.", test: function (m) { return m.mis === 0 && m.news >= 2; } },
+    { id: "village", name: "Village square", desc: "At least half the top 10 from people you know, covering four or more topics.", test: function (m) { return m.known >= 5 && m.topics >= 4; } },
+    { id: "money", name: "Follow the money", desc: "Make ads 30% or more of the top 10. Would a user notice?", test: function (m) { return m.ads >= 3; } }
+  ];
+
+  var EMPTY = { w: JSON.parse(JSON.stringify(PRESETS[0].w)), preset: "engage", interests: ["local", "food"], reveal: false, done: {}, reflect: {} };
+  function fresh() { return JSON.parse(JSON.stringify(EMPTY)); }
+  var store = PlayLab.store(TOOL_ID);
+  var state = Object.assign(fresh(), store.get("state", {}) || {});
+  function save() { store.set("state", state); }
+
+  var esc = PlayLab.escape;
+  var $ = function (id) { return document.getElementById(id); };
+  var reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ==================================================================
+     Ranking
+     ================================================================== */
+  function features(p) {
+    return {
+      recency: Math.max(0, 1 - p.hours / 72),
+      engagement: p.eng / 100,
+      outrage: p.out / 100,
+      known: p.kind === "family" ? 1 : p.kind === "friend" ? 0.9 : p.kind === "group" ? 0.6 : 0,
+      paid: p.ad ? 1 : 0,
+      interests: state.interests.indexOf(p.topic) !== -1 ? 1 : 0,
+      reliability: p.mis ? -1.5 : 0
+    };
+  }
+  function contributions(p) {
+    var f = features(p), out = {};
+    LEVERS.forEach(function (l) { out[l.id] = state.w[l.id] / 10 * f[l.id]; });
+    return out;
+  }
+  function score(p) {
+    var c = contributions(p), s = 0;
+    for (var k in c) s += c[k];
+    return s;
+  }
+  function ranked() {
+    return POSTS.map(function (p) { return { p: p, s: score(p) }; })
+      .sort(function (a, b) { return b.s - a.s || a.p.hours - b.p.hours; });
+  }
+  function metrics(top) {
+    var known = 0, ads = 0, mis = 0, news = 0, out = 0, topics = {};
+    top.forEach(function (x) {
+      var p = x.p;
+      if (p.kind === "family" || p.kind === "friend" || p.kind === "group") known++;
+      if (p.ad) ads++;
+      if (p.mis) mis++;
+      if (p.kind === "news") news++;
+      out += p.out; topics[p.topic] = 1;
+    });
+    return { known: known, ads: ads, mis: mis, news: news, outrage: Math.round(out / top.length), topics: Object.keys(topics).length };
+  }
+
+  /* ==================================================================
+     Controls
+     ================================================================== */
+  function renderPresets() {
+    $("presets").innerHTML = PRESETS.map(function (p) {
+      return '<button class="btn btn--small" type="button" data-preset="' + p.id + '" aria-pressed="' + (state.preset === p.id) + '">' + esc(p.name) + "</button>";
+    }).join("");
+  }
+  function renderLevers() {
+    $("levers").innerHTML = LEVERS.map(function (l) {
+      return '<div class="fs-lever"><div class="fs-lever__top"><label for="lv-' + l.id + '">' + esc(l.name) + "</label>" +
+        '<output id="out-' + l.id + '" for="lv-' + l.id + '">' + state.w[l.id] + "</output></div>" +
+        '<p id="d-' + l.id + '">' + esc(l.desc) + "</p>" +
+        '<input type="range" id="lv-' + l.id + '" data-lever="' + l.id + '" min="0" max="10" step="1" value="' + state.w[l.id] + '" aria-describedby="d-' + l.id + '"></div>';
+    }).join("");
+  }
+  function renderInterests() {
+    $("interests").innerHTML = Object.keys(TOPICS).map(function (k) {
+      return '<label><input type="checkbox" value="' + k + '"' + (state.interests.indexOf(k) !== -1 ? " checked" : "") + "> " + esc(TOPICS[k]) + "</label>";
+    }).join("");
+  }
+
+  $("presets").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-preset]"); if (!b) return;
+    var p = PRESETS.find(function (x) { return x.id === b.dataset.preset; });
+    state.w = JSON.parse(JSON.stringify(p.w)); state.preset = p.id;
+    save(); renderPresets(); renderLevers(); update();
+  });
+  $("levers").addEventListener("input", function (e) {
+    var id = e.target.dataset.lever; if (!id) return;
+    state.w[id] = Number(e.target.value);
+    $("out-" + id).textContent = e.target.value;
+    if (state.preset) { state.preset = ""; renderPresets(); }
+    save(); scheduleUpdate();
+  });
+  $("interests").addEventListener("change", function (e) {
+    var v = e.target.value;
+    if (e.target.checked) state.interests.push(v); else state.interests = state.interests.filter(function (x) { return x !== v; });
+    save(); update();
+  });
+  $("reveal").addEventListener("change", function (e) {
+    state.reveal = e.target.checked; save();
+    $("feed").classList.toggle("reveal-on", state.reveal);
+  });
+
+  var queued = false;
+  function scheduleUpdate() {
+    if (queued) return; queued = true;
+    requestAnimationFrame(function () { queued = false; update(); });
+  }
+
+  /* ==================================================================
+     Feed, health and challenges
+     ================================================================== */
+  var quiet = false;    // true while loading, so challenges met by a preset don’t announce themselves
+  var lastRanks = {};   // where each post sat before the latest change
+  var openWhy = {};     // which "Why am I seeing this?" panels are open
+
+  function ago(h) { return h < 1 ? "just now" : h < 24 ? h + "h ago" : Math.floor(h / 24) + "d ago"; }
+  function initials(name) {
+    var clean = name.replace(/[@()]/g, "").replace(/\byour\b|\bsister\b/gi, "").trim();
+    var parts = clean.split(/\s+/);
+    return (parts[0].charAt(0) + (parts[1] ? parts[1].charAt(0) : "")).toUpperCase();
+  }
+
+  function postHTML(x, i, ranksNow) {
+    var p = x.p, before = lastRanks[p.id], move = "";
+    if (before != null && before !== i) {
+      var d = before - i;
+      move = '<span class="fs-move ' + (d > 0 ? "up" : "down") + '" aria-label="' + (d > 0 ? "up " : "down ") + Math.abs(d) + '">' + (d > 0 ? "↑" : "↓") + Math.abs(d) + "</span>";
+    } else if (before == null || before >= TOP) {
+      move = Object.keys(lastRanks).length ? '<span class="fs-move up">new</span>' : "";
+    }
+    var c = contributions(p), max = 0;
+    LEVERS.forEach(function (l) { max = Math.max(max, Math.abs(c[l.id])); });
+    var bars = LEVERS.filter(function (l) { return Math.abs(c[l.id]) > 0.001; })
+      .sort(function (a, b) { return Math.abs(c[b.id]) - Math.abs(c[a.id]); })
+      .map(function (l) {
+        var v = c[l.id], w = max ? Math.round(Math.abs(v) / max * 100) : 0;
+        return "<li><span>" + esc(l.name) + '</span><span class="fs-bar' + (v < 0 ? " neg" : "") + '"><span style="width:' + w + '%"></span></span><b>' + (v < 0 ? "−" : "+") + Math.abs(v).toFixed(1) + "</b></li>";
+      }).join("");
+    return '<li class="fs-post k-' + p.kind + '" data-pid="' + p.id + '">' +
+      '<div class="fs-rank" aria-hidden="true">' + (i + 1) + move + "</div>" +
+      "<div>" +
+        '<div class="fs-post__head"><span class="fs-avatar" aria-hidden="true">' + esc(initials(p.author)) + "</span>" +
+          '<span class="fs-author">' + esc(p.author) + "</span>" +
+          '<span class="fs-kind">' + esc(KINDS[p.kind]) + "</span>" +
+          '<span class="fs-age">' + ago(p.hours) + "</span>" +
+          (p.ad ? '<span class="fs-sponsored">Sponsored</span>' : "") + "</div>" +
+        '<p class="fs-text">' + esc(p.text) + "</p>" +
+        '<div class="fs-post__foot"><span class="fs-topic">' + esc(TOPICS[p.topic]) + "</span>" +
+          '<span class="fs-known">' +
+            "<span>Engagement " + p.eng + "</span><span>Reaction " + p.out + "</span>" +
+            (p.mis ? '<span class="fs-flag">Flagged as misleading</span>' : "<span>Not flagged</span>") +
+          "</span></div>" +
+        '<details class="fs-why" data-why="' + p.id + '"' + (openWhy[p.id] ? " open" : "") + "><summary>Why am I seeing this?</summary>" +
+          (bars ? '<ul class="fs-bars">' + bars + "</ul>" : '<p class="hint">No lever is pushing this post up right now.</p>') +
+        "</details>" +
+      "</div></li>";
+  }
+
+  function renderFeed(top) {
+    var feed = $("feed");
+    var beforePos = {};
+    feed.querySelectorAll("[data-pid]").forEach(function (el) { beforePos[el.dataset.pid] = el.getBoundingClientRect().top; });
+    feed.innerHTML = top.map(function (x, i) { return postHTML(x, i); }).join("");
+    feed.classList.toggle("reveal-on", state.reveal);
+    if (reduceMotion || !feed.animate) return;
+    // Slide each post from where it was to where it is now
+    feed.querySelectorAll("[data-pid]").forEach(function (el) {
+      var b = beforePos[el.dataset.pid], a = el.getBoundingClientRect().top;
+      if (b == null) { if (Object.keys(beforePos).length) el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300 }); return; }
+      if (Math.abs(b - a) > 1) el.animate([{ transform: "translateY(" + (b - a) + "px)" }, { transform: "none" }], { duration: 380, easing: "cubic-bezier(0.2, 0.7, 0.2, 1)" });
+    });
+  }
+  $("feed").addEventListener("toggle", function (e) {
+    var d = e.target; if (d.dataset && d.dataset.why) openWhy[d.dataset.why] = d.open;
+  }, true);
+
+  function renderHealth(m) {
+    var stats = [
+      ["From people you know", m.known * 10 + "%", false],
+      ["Ads", m.ads * 10 + "%", m.ads >= 3],
+      ["Misleading posts", String(m.mis), m.mis >= 2],
+      ["Average reaction", m.outrage + "%", m.outrage > 50],
+      ["Different topics", m.topics + " of " + Object.keys(TOPICS).length, m.topics <= 3],
+      ["From news outlets", String(m.news), false]
+    ];
+    $("health").innerHTML = stats.map(function (s) {
+      return '<div class="fs-stat' + (s[2] ? " is-warn" : "") + '"><dt>' + esc(s[0]) + "</dt><dd>" + esc(s[1]) + "</dd></div>";
+    }).join("");
+    var notes = [];
+    if (m.mis >= 2) notes.push(m.mis + " misleading posts made your top 10. Most users would have no way to tell.");
+    else if (m.mis === 1) notes.push("One misleading post made your top 10.");
+    if (m.outrage > 50) notes.push("This feed runs hot. The average post is designed to provoke a reaction.");
+    if (m.ads >= 3) notes.push("Almost a third or more of what you see has been paid for.");
+    if (m.known <= 2) notes.push("Very little here comes from people you actually know.");
+    if (m.topics <= 3) notes.push("Your feed is narrow: only " + m.topics + " topics. That’s how filter bubbles form.");
+    if (!notes.length) notes.push("A fairly balanced feed. Which lever would a platform be tempted to turn up, and why?");
+    $("insight").innerHTML = notes.map(function (n) { return "<p>" + esc(n) + "</p>"; }).join("");
+  }
+
+  function renderChallenges(m) {
+    var newly = [];
+    $("challenges").innerHTML = CHALLENGES.map(function (c) {
+      var met = c.test(m);
+      if (met && !state.done[c.id]) { state.done[c.id] = true; newly.push(c.name); }
+      return '<li class="fs-ch' + (met ? " is-met" : "") + '"><h3><span>' + esc(c.name) + '</span><span class="fs-ch__state">' +
+        (met ? "✓ Met" : state.done[c.id] ? "Done before" : "Not yet") + "</span></h3><p>" + esc(c.desc) + "</p></li>";
+    }).join("");
+    if (newly.length) { save(); if (!quiet) PlayLab.toast("Challenge met: " + newly.join(", ")); }
+  }
+
+  function update() {
+    var all = ranked(), top = all.slice(0, TOP);
+    var m = metrics(top);
+    renderFeed(top);
+    renderHealth(m);
+    renderChallenges(m);
+    lastRanks = {};
+    all.forEach(function (x, i) { lastRanks[x.p.id] = i; });
+  }
+
+  /* ---------- Reflections ---------- */
+  var reflectFields = document.querySelectorAll("[data-reflect]");
+  function renderReflect() { reflectFields.forEach(function (f) { f.value = state.reflect[f.dataset.reflect] || ""; }); }
+  reflectFields.forEach(function (f) {
+    f.addEventListener("input", function () { state.reflect[f.dataset.reflect] = f.value; save(); });
+  });
+
+  /* ==================================================================
+     Save and export
+     ================================================================== */
+  function summary() {
+    var top = ranked().slice(0, TOP), m = metrics(top);
+    var preset = PRESETS.find(function (p) { return p.id === state.preset; });
+    var lines = [
+      "# Feed Algorithm Sandbox",
+      "",
+      "Futures PlayLab, academyEX. Created " + new Date().toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }) + ".",
+      "",
+      "## My settings" + (preset ? " (" + preset.name + " preset)" : ""),
+      ""
+    ];
+    LEVERS.forEach(function (l) { lines.push("- " + l.name + ": " + state.w[l.id] + "/10"); });
+    lines.push("- Interests: " + (state.interests.map(function (k) { return TOPICS[k]; }).join(", ") || "none"), "");
+    lines.push("## Feed check (top 10)", "",
+      "- From people you know: " + m.known * 10 + "%", "- Ads: " + m.ads * 10 + "%", "- Misleading posts: " + m.mis,
+      "- Average reaction: " + m.outrage + "%", "- Different topics: " + m.topics, "- From news outlets: " + m.news, "");
+    lines.push("## Top 10 posts", "");
+    top.forEach(function (x, i) {
+      var p = x.p;
+      lines.push((i + 1) + ". **" + p.author + "** (" + KINDS[p.kind] + (p.ad ? ", sponsored" : "") + (p.mis ? ", misleading" : "") + "): " + p.text);
+    });
+    lines.push("", "## Challenges", "");
+    CHALLENGES.forEach(function (c) { lines.push("- [" + (state.done[c.id] ? "x" : " ") + "] " + c.name + ": " + c.desc); });
+    lines.push("", "## Reflections", "");
+    document.querySelectorAll(".reflect label").forEach(function (lab) {
+      var key = $(lab.htmlFor).dataset.reflect;
+      lines.push("**" + lab.textContent + "**", "", (state.reflect[key] || "").trim() || "_No answer yet._", "");
+    });
+    return lines.join("\n");
+  }
+
+  var actions = {
+    image: function () {
+      PlayLab.export.elementToPNG($("workspace"), PlayLab.export.filename(TOOL_ID, "png"))
+        .then(function () { PlayLab.toast("Image downloaded"); })
+        .catch(function (err) { PlayLab.toast(err.message); });
+    },
+    summary: function () {
+      PlayLab.export.markdown(PlayLab.export.filename(TOOL_ID + "-summary", "md"), summary());
+      PlayLab.toast("Summary downloaded");
+    },
+    save: function () {
+      PlayLab.export.saveFile(TOOL_ID, state);
+      PlayLab.toast("Copy saved to your downloads");
+    },
+    open: function () {
+      PlayLab.export.openSaveFile(TOOL_ID).then(function (data) {
+        state = Object.assign(fresh(), data);
+        save(); renderAll();
+        PlayLab.toast("Copy opened");
+      }).catch(function (err) {
+        if (err.message !== "cancelled") PlayLab.toast(err.message);
+      });
+    },
+    print: function () { PlayLab.export.print(); },
+    reset: function () {
+      if (!confirm("Start over? This resets the levers, challenges and reflections in this browser. Save a copy first if you want to keep them.")) return;
+      store.clear();
+      state = fresh();
+      lastRanks = {}; openWhy = {};
+      renderAll();
+      PlayLab.toast("Reset to the Maximum engagement preset");
+    }
+  };
+  document.querySelectorAll("[data-action]").forEach(function (btn) {
+    btn.addEventListener("click", function () { actions[btn.dataset.action](); });
+  });
+
+  function renderAll() {
+    renderPresets(); renderLevers(); renderInterests();
+    $("reveal").checked = !!state.reveal;
+    quiet = true; update(); quiet = false;
+    renderReflect();
+  }
+  renderAll();
+})();
+</script>
+</body>
+</html>
