@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="en-NZ">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Assumption Mapper | Futures PlayLab</title>
+  <meta name="description" content="Plot your assumptions by importance and evidence to find what to test first.">
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/css/playlab.css">
+  <script>try{var t=localStorage.getItem("playlab:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+  <style>
+    .am-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+    .am-view { position: sticky; top: 5.5rem; }
+    @media (max-width: 960px) { .am-layout { grid-template-columns: minmax(0, 1fr); } .am-view { position: static; } }
+    .am-edit h2, .am-view h2, .am-plan h2 { font-size: var(--step-2); }
+    .am-block + .am-block { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line); }
+    .am-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
+
+    .am-cats { border: 0; margin: 0 0 0.75rem; padding: 0; }
+    .am-cats legend { font-weight: 700; margin-bottom: 0.35rem; padding: 0; }
+    .am-cats__opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.4rem; }
+    @media (max-width: 520px) { .am-cats__opts { grid-template-columns: minmax(0, 1fr); } }
+    .am-cat { display: flex; gap: 0.55rem; align-items: flex-start; padding: 0.55rem 0.7rem; border: 1.5px solid var(--line); border-radius: var(--radius-md); cursor: pointer; font-weight: 400; margin: 0; }
+    .am-cat:has(input:checked) { border-color: var(--accent); background: var(--accent-tint); }
+    .am-cat input { margin-top: 0.3rem; accent-color: var(--accent); }
+    .am-cat strong { display: block; }
+    .am-cat span span { font-size: var(--step--1); color: var(--ink-soft); }
+
+    .am-list { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; gap: 0.75rem; }
+    .am-item { padding: 0.9rem 1rem; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-md); }
+    .am-item.is-flash { box-shadow: 0 0 0 3px var(--accent); }
+    .am-item__top { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0.6rem; align-items: start; }
+    .am-num { display: inline-grid; place-items: center; width: 2rem; height: 2rem; border-radius: 999px; background: var(--ink); color: var(--bg); font-weight: 700; }
+    .am-item[data-q="test"] .am-num { background: var(--danger); color: var(--surface); }
+    .am-item textarea { min-height: 4.6rem; }
+    .am-meta { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.5rem 0 0; font-size: var(--step--1); }
+    .am-tag { padding: 0.1rem 0.6rem; border-radius: 999px; background: var(--surface-2); font-weight: 700; }
+    .am-tag--test { background: var(--danger); color: var(--surface); }
+    .am-sliders { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.75rem 1.25rem; margin-top: 0.75rem; }
+    @media (max-width: 560px) { .am-sliders { grid-template-columns: minmax(0, 1fr); } }
+    .am-sliders label { font-size: var(--step--1); margin-bottom: 0.1rem; }
+    .am-sliders input[type="range"] { width: 100%; accent-color: var(--accent); min-height: 32px; }
+    .am-sliders output { display: block; font-size: var(--step--1); color: var(--ink-soft); }
+
+    /* Map */
+    .am-svg { display: block; width: 100%; height: auto; }
+    .am-svg text { font-family: var(--font-body); font-size: 14px; fill: var(--ink-soft); }
+    .am-quad { stroke: none; }
+    .am-quad--test { fill: var(--danger); fill-opacity: 0.1; }
+    .am-quad--build { fill: var(--design); fill-opacity: 0.1; }
+    .am-quad--later, .am-quad--aside { fill: var(--surface-2); fill-opacity: 0.6; }
+    .am-axis { stroke: var(--ink-soft); stroke-width: 1.5; }
+    .am-mid { stroke: var(--line); stroke-width: 2; stroke-dasharray: 6 5; }
+    .am-svg .am-qlabel { font-weight: 700; fill: var(--ink); font-size: 15px; }
+    .am-dot circle { fill: var(--ink); stroke: var(--surface); stroke-width: 2; }
+    .am-dot.is-test circle { fill: var(--danger); }
+    .am-svg .am-dot text { fill: var(--surface); font-weight: 700; font-size: 13px; }
+    .am-dot { cursor: pointer; }
+    .am-dot:focus { outline: none; }
+    .am-dot:hover circle, .am-dot:focus-visible circle { stroke: var(--accent); stroke-width: 4; }
+    .am-summary { margin-top: 1rem; display: grid; gap: 0.35rem; }
+    .am-summary p { margin: 0; }
+
+    .am-plan { margin-top: 1rem; }
+    .am-tests { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; gap: 1rem; }
+    .am-test { padding: 1rem; border: 1px solid var(--line); border-left: 5px solid var(--danger); border-radius: var(--radius-md); background: var(--bg); }
+    .am-test h3 { margin: 0 0 0.75rem; font-size: var(--step-0); font-family: var(--font-body); }
+    .am-test__grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.75rem 1rem; }
+    @media (max-width: 700px) { .am-test__grid { grid-template-columns: minmax(0, 1fr); } }
+    .am-test textarea { min-height: 4.5rem; }
+    .am-ideas { margin: 0.5rem 0 0; color: var(--ink-soft); font-size: var(--step--1); }
+
+    @media print {
+      .am-edit { display: none; }
+      .am-layout { display: block; }
+      .am-view { position: static; }
+      .am-test { break-inside: avoid; }
+    }
+  </style>
+</head>
+
+<body class="cat-design" data-tool="assumption-mapper">
+
+<main id="main" class="page tool-page">
+
+  <header class="tool-intro">
+    <p class="tool-intro__cat"><a href="../../#design" data-pl-category-link data-pl="category">Design thinking</a></p>
+    <h1 data-pl="name">Assumption Mapper</h1>
+    <p class="lede" data-pl="description">Plot your assumptions by importance and evidence to find what to test first.</p>
+    <dl class="tool-intro__meta">
+      <div><dt>Time</dt><dd data-pl="minutes">15 minutes</dd></div>
+      <div><dt>You leave with</dt><dd data-pl="output">A prioritised test list</dd></div>
+    </dl>
+  </header>
+
+  <section class="tool-steps" aria-labelledby="how-title">
+    <h2 id="how-title">How it works</h2>
+    <ol>
+      <li>Describe a project, idea or plan you’re working on.</li>
+      <li>List what you’re assuming is true. Use the four types to find assumptions you might not have noticed.</li>
+      <li>Rate each one: how much would it matter if you were wrong, and how much evidence do you have?</li>
+      <li>Plan quick tests for the assumptions that land in the top-left corner, then reflect.</li>
+    </ol>
+  </section>
+
+  <div class="am-layout">
+
+    <section class="panel am-edit" aria-labelledby="edit-title">
+      <h2 id="edit-title">Your assumptions</h2>
+
+      <div class="am-block">
+        <label for="project">What are you working on?</label>
+        <textarea id="project" maxlength="300" placeholder="For example, an app to help new staff settle in during their first 90 days"></textarea>
+        <div class="am-row">
+          <p class="hint" style="margin:0">A real project from your work is best.</p>
+          <button class="btn btn--small" type="button" id="example-btn">Try an example</button>
+        </div>
+      </div>
+
+      <form class="am-block" id="add-form">
+        <fieldset class="am-cats">
+          <legend>What kind of assumption is it?</legend>
+          <div class="am-cats__opts" id="cat-opts"></div>
+        </fieldset>
+        <label for="new-text">Add an assumption</label>
+        <textarea id="new-text" maxlength="200" placeholder="We believe that…"></textarea>
+        <div class="am-row">
+          <p class="hint" style="margin:0" id="cat-prompt"></p>
+          <button class="btn btn--primary" type="submit">Add assumption</button>
+        </div>
+      </form>
+
+      <div class="am-block">
+        <ol class="am-list" id="list" aria-label="Assumptions"></ol>
+        <p class="empty" id="list-empty">No assumptions yet. Aim for at least five, with a mix of types.</p>
+      </div>
+    </section>
+
+    <section class="panel am-view" id="workspace" aria-labelledby="map-title">
+      <h2 id="map-title">Your assumption map</h2>
+      <div id="map"></div>
+      <div class="am-summary" id="summary" aria-live="polite"></div>
+    </section>
+
+  </div>
+
+  <section class="panel am-plan" aria-labelledby="plan-title">
+    <h2 id="plan-title">Your test plan</h2>
+    <p>These assumptions matter a lot, but you don’t have much evidence for them yet. Test the riskiest first.</p>
+    <ol class="am-tests" id="tests"></ol>
+    <p class="empty" id="tests-empty">Nothing to test yet. Assumptions rated as important with little evidence will appear here.</p>
+    <p class="am-ideas"><strong>Quick test ideas:</strong> talk to five people affected, look at data you already have, make a rough mock-up and watch someone use it, run a small pilot, ask an expert, or put out a simple sign-up page to see who responds.</p>
+  </section>
+
+  <section class="tool-actions" aria-label="Save and export">
+    <p class="tool-actions__note">Your work saves automatically in this browser.</p>
+    <div class="tool-actions__buttons">
+      <button class="btn btn--small" type="button" data-action="image">Download image</button>
+      <button class="btn btn--small" type="button" data-action="summary">Download summary</button>
+      <button class="btn btn--small" type="button" data-action="save">Save a copy</button>
+      <button class="btn btn--small" type="button" data-action="open">Open a copy</button>
+      <button class="btn btn--small" type="button" data-action="print">Print or save as PDF</button>
+      <button class="btn btn--small btn--danger" type="button" data-action="reset">Start over</button>
+    </div>
+  </section>
+
+  <section class="reflect" aria-labelledby="reflect-title">
+    <h2 id="reflect-title">Reflect</h2>
+    <p>Jot down a few thoughts. These save with the rest of your work.</p>
+    <ol>
+      <li>
+        <label for="r1">Which assumption surprised you most by landing in the “test first” corner?</label>
+        <textarea id="r1" data-reflect="surprise"></textarea>
+      </li>
+      <li>
+        <label for="r2">Whose views or evidence would challenge your assumptions the most? How could you hear from them?</label>
+        <textarea id="r2" data-reflect="whose"></textarea>
+      </li>
+      <li>
+        <label for="r3">What’s the smallest test you could run in the next two weeks?</label>
+        <textarea id="r3" data-reflect="next"></textarea>
+      </li>
+    </ol>
+  </section>
+
+</main>
+
+<script src="../../assets/js/tools.js"></script>
+<script src="../../assets/js/playlab.js"></script>
+
+<script>
+(function () {
+  "use strict";
+
+  var TOOL_ID = "assumption-mapper";
+  var STEM = "We believe that ";
+  var MAX = 15;
+
+  var CATS = [
+    { id: "people", name: "People", q: "Will people want it and use it?" },
+    { id: "delivery", name: "Delivery", q: "Can we actually make it and run it?" },
+    { id: "money", name: "Money", q: "Can we afford it and keep it going?" },
+    { id: "impact", name: "Impact", q: "What effects could it have, intended or not?" }
+  ];
+  var IMPORTANCE = ["", "Barely matters", "A minor setback", "A real problem", "A big problem", "It sinks the project"];
+  var EVIDENCE = ["", "Just a hunch", "A few stories", "Some data", "Good data", "Tested and proven"];
+  var QUADS = {
+    test: { name: "Test first", desc: "Important, but little evidence" },
+    build: { name: "Build on it", desc: "Important, with good evidence" },
+    later: { name: "Check later", desc: "Less important, little evidence" },
+    aside: { name: "Set aside", desc: "Less important, good evidence" }
+  };
+
+  var EXAMPLE = {
+    project: "An app to help new staff settle in during their first 90 days.",
+    items: [
+      ["people", "We believe that new staff would rather use an app than ask a person.", 5, 1],
+      ["people", "We believe that managers will encourage new staff to use it.", 4, 2],
+      ["delivery", "We believe that our IT team can build and support it within six months.", 4, 4],
+      ["money", "We believe that reducing early turnover will save more than the app costs.", 5, 2],
+      ["impact", "We believe that tracking new staff activity won’t feel like surveillance.", 4, 1],
+      ["delivery", "We believe that HR already has the onboarding content we need.", 2, 4],
+      ["people", "We believe that new staff will want to personalise how the app looks.", 2, 1]
+    ]
+  };
+
+  var EMPTY = { project: "", cat: "people", items: [], reflect: {} };
+  function fresh() { return JSON.parse(JSON.stringify(EMPTY)); }
+  var store = PlayLab.store(TOOL_ID);
+  var state = Object.assign(fresh(), store.get("state", {}) || {});
+  function save() { store.set("state", state); }
+
+  var esc = PlayLab.escape;
+  var $ = function (id) { return document.getElementById(id); };
+  function cat(id) { return CATS.find(function (c) { return c.id === id; }) || CATS[0]; }
+  function quad(it) {
+    var high = it.imp >= 3, low = it.ev <= 3;   // when in doubt, lean towards testing
+    return high ? (low ? "test" : "build") : (low ? "later" : "aside");
+  }
+  function newItem(c, text, imp, ev) {
+    return { id: "a" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), cat: c, text: text, imp: imp || 3, ev: ev || 3, test: "", wrong: "" };
+  }
+
+  /* ==================================================================
+     Project and adding assumptions
+     ================================================================== */
+  $("project").addEventListener("input", function (e) { state.project = e.target.value; save(); });
+
+  function renderCats() {
+    $("cat-opts").innerHTML = CATS.map(function (c) {
+      return '<label class="am-cat"><input type="radio" name="cat" value="' + c.id + '"' + (state.cat === c.id ? " checked" : "") + ">" +
+        "<span><strong>" + esc(c.name) + "</strong><span>" + esc(c.q) + "</span></span></label>";
+    }).join("");
+    $("cat-prompt").textContent = "Ask: " + cat(state.cat).q;
+  }
+  $("cat-opts").addEventListener("change", function (e) {
+    state.cat = e.target.value; save();
+    $("cat-prompt").textContent = "Ask: " + cat(state.cat).q;
+  });
+
+  var newText = $("new-text");
+  newText.addEventListener("focus", function () {
+    if (!newText.value) { newText.value = STEM; newText.setSelectionRange(STEM.length, STEM.length); }
+  });
+  newText.addEventListener("blur", function () { if (newText.value.trim() === STEM.trim()) newText.value = ""; });
+
+  $("add-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var v = newText.value.trim();
+    if (!v || v === STEM.trim()) { PlayLab.toast("Write an assumption first"); newText.focus(); return; }
+    if (state.items.length >= MAX) { PlayLab.toast("That’s " + MAX + " assumptions. Focus on the ones that matter most"); return; }
+    var it = newItem(state.cat, v);
+    state.items.push(it);
+    newText.value = "";
+    save(); renderList(); renderMap(); renderTests();
+    PlayLab.toast("Added. Now rate it below");
+    var range = $("imp-" + it.id);
+    if (range) range.focus();
+  });
+
+  $("example-btn").addEventListener("click", function () {
+    if ((state.project.trim() || state.items.length) && !confirm("Replace your project and assumptions with an example?")) return;
+    state.project = EXAMPLE.project;
+    state.items = EXAMPLE.items.map(function (x) { return newItem(x[0], x[1], x[2], x[3]); });
+    $("project").value = state.project;
+    save(); renderList(); renderMap(); renderTests();
+    PlayLab.toast("Example loaded. Try changing the ratings");
+  });
+
+  /* ==================================================================
+     Assumption list
+     ================================================================== */
+  function itemHTML(it, n) {
+    var q = quad(it);
+    return '<li class="am-item" id="item-' + it.id + '" data-id="' + it.id + '" data-q="' + q + '">' +
+      '<div class="am-item__top">' +
+        '<span class="am-num" aria-hidden="true">' + n + "</span>" +
+        '<div><label class="visually-hidden" for="txt-' + it.id + '">Assumption ' + n + "</label>" +
+        '<textarea id="txt-' + it.id + '" data-field="text" maxlength="200">' + esc(it.text) + "</textarea></div>" +
+        '<button class="btn btn--quiet btn--small" type="button" data-remove aria-label="Remove assumption ' + n + '">Remove</button>' +
+      "</div>" +
+      '<p class="am-meta"><span class="am-tag">' + esc(cat(it.cat).name) + "</span>" +
+        '<span class="am-tag' + (q === "test" ? " am-tag--test" : "") + '" data-qtag>' + esc(QUADS[q].name) + "</span></p>" +
+      '<div class="am-sliders">' +
+        "<div><label for=\"imp-" + it.id + '">If we’re wrong, how much does it matter?</label>' +
+        '<input type="range" min="1" max="5" step="1" id="imp-' + it.id + '" data-field="imp" value="' + it.imp + '" aria-valuetext="' + it.imp + ", " + IMPORTANCE[it.imp] + '">' +
+        '<output for="imp-' + it.id + '" data-out="imp">' + it.imp + ". " + IMPORTANCE[it.imp] + "</output></div>" +
+        "<div><label for=\"ev-" + it.id + '">How much evidence do we have?</label>' +
+        '<input type="range" min="1" max="5" step="1" id="ev-' + it.id + '" data-field="ev" value="' + it.ev + '" aria-valuetext="' + it.ev + ", " + EVIDENCE[it.ev] + '">' +
+        '<output for="ev-' + it.id + '" data-out="ev">' + it.ev + ". " + EVIDENCE[it.ev] + "</output></div>" +
+      "</div></li>";
+  }
+  function renderList() {
+    $("list").innerHTML = state.items.map(function (it, i) { return itemHTML(it, i + 1); }).join("");
+    $("list-empty").hidden = state.items.length > 0;
+  }
+  function findItem(el) {
+    var li = el.closest("[data-id]");
+    return li ? { li: li, it: state.items.find(function (x) { return x.id === li.dataset.id; }) } : null;
+  }
+
+  $("list").addEventListener("input", function (e) {
+    var f = findItem(e.target); if (!f) return;
+    var field = e.target.dataset.field;
+    if (field === "text") { f.it.text = e.target.value; save(); renderTests(true); return; }
+    if (field === "imp" || field === "ev") {
+      var v = Number(e.target.value), labels = field === "imp" ? IMPORTANCE : EVIDENCE;
+      f.it[field] = v;
+      e.target.setAttribute("aria-valuetext", v + ", " + labels[v]);
+      f.li.querySelector('[data-out="' + field + '"]').textContent = v + ". " + labels[v];
+      var q = quad(f.it);
+      f.li.dataset.q = q;
+      var tag = f.li.querySelector("[data-qtag]");
+      tag.textContent = QUADS[q].name;
+      tag.className = "am-tag" + (q === "test" ? " am-tag--test" : "");
+      save(); renderMap(); renderTests();
+    }
+  });
+  $("list").addEventListener("click", function (e) {
+    if (!e.target.closest("[data-remove]")) return;
+    var f = findItem(e.target);
+    if (!confirm("Remove this assumption?")) return;
+    state.items = state.items.filter(function (x) { return x !== f.it; });
+    save(); renderList(); renderMap(); renderTests();
+    newText.focus();
+  });
+
+  /* ==================================================================
+     The map
+     ================================================================== */
+  // Plot area: evidence runs left (none) to right (strong); importance runs bottom (low) to top (high)
+  var L = 70, R = 500, T = 30, B = 450;
+  function px(ev) { return L + 45 + (ev - 1) / 4 * (R - L - 90); }
+  function py(imp) { return B - 45 - (imp - 1) / 4 * (B - T - 100); }
+
+  function renderMap() {
+    // Dividing lines sit where the rule splits: importance 3+ counts as high, evidence 3 or less counts as low
+    var midX = px(3.5), midY = py(2.5);
+    var groups = {};
+    var dots = state.items.map(function (it, i) {
+      var key = it.imp + "-" + it.ev;
+      var k = groups[key] = (groups[key] || 0) + 1;
+      // Spread out assumptions with identical ratings
+      var ang = (k - 1) * 2.4, rad = k === 1 ? 0 : 14 + (k - 1) * 3;
+      var x = px(it.ev) + Math.cos(ang) * rad, y = py(it.imp) + Math.sin(ang) * rad;
+      var q = quad(it);
+      return '<g class="am-dot' + (q === "test" ? " is-test" : "") + '" data-id="' + it.id + '" tabindex="0" role="button"' +
+        ' aria-label="Assumption ' + (i + 1) + ": " + esc(QUADS[q].name) + '. Select to edit."' +
+        ' transform="translate(' + x.toFixed(1) + " " + y.toFixed(1) + ')"><circle r="13"/><text text-anchor="middle" y="4.5">' + (i + 1) + "</text></g>";
+    }).join("");
+
+    $("map").innerHTML =
+      '<svg class="am-svg" viewBox="0 0 520 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="map-t map-d">' +
+      '<title id="map-t">Assumption map</title><desc id="map-d">' + esc(describe()) + "</desc>" +
+      '<rect class="am-quad am-quad--test"  x="' + L + '" y="' + T + '" width="' + (midX - L) + '" height="' + (midY - T) + '"/>' +
+      '<rect class="am-quad am-quad--build" x="' + midX + '" y="' + T + '" width="' + (R - midX) + '" height="' + (midY - T) + '"/>' +
+      '<rect class="am-quad am-quad--later" x="' + L + '" y="' + midY + '" width="' + (midX - L) + '" height="' + (B - midY) + '"/>' +
+      '<rect class="am-quad am-quad--aside" x="' + midX + '" y="' + midY + '" width="' + (R - midX) + '" height="' + (B - midY) + '"/>' +
+      '<line class="am-mid" x1="' + midX + '" y1="' + T + '" x2="' + midX + '" y2="' + B + '"/>' +
+      '<line class="am-mid" x1="' + L + '" y1="' + midY + '" x2="' + R + '" y2="' + midY + '"/>' +
+      '<line class="am-axis" x1="' + L + '" y1="' + B + '" x2="' + R + '" y2="' + B + '"/>' +
+      '<line class="am-axis" x1="' + L + '" y1="' + T + '" x2="' + L + '" y2="' + B + '"/>' +
+      '<text class="am-qlabel" x="' + (L + 12) + '" y="' + (T + 22) + '">Test first</text>' +
+      '<text class="am-qlabel" x="' + (R - 12) + '" y="' + (T + 22) + '" text-anchor="end">Build on it</text>' +
+      '<text class="am-qlabel" x="' + (L + 12) + '" y="' + (B - 12) + '">Check later</text>' +
+      '<text class="am-qlabel" x="' + (R - 12) + '" y="' + (B - 12) + '" text-anchor="end">Set aside</text>' +
+      '<text x="' + L + '" y="' + (B + 24) + '">Little evidence</text>' +
+      '<text x="' + R + '" y="' + (B + 24) + '" text-anchor="end">Strong evidence</text>' +
+      '<text x="' + ((L + R) / 2) + '" y="' + (B + 48) + '" text-anchor="middle" style="font-weight:700">Evidence</text>' +
+      '<text transform="translate(' + (L - 16) + " " + B + ') rotate(-90)">Matters less</text>' +
+      '<text transform="translate(' + (L - 16) + " " + T + ') rotate(-90)" text-anchor="end">Matters a lot</text>' +
+      '<text transform="translate(' + (L - 40) + " " + ((T + B) / 2) + ') rotate(-90)" text-anchor="middle" style="font-weight:700">Importance</text>' +
+      dots + "</svg>";
+
+    renderSummary();
+  }
+
+  function byQuad() {
+    var out = { test: [], build: [], later: [], aside: [] };
+    state.items.forEach(function (it, i) { out[quad(it)].push(i + 1); });
+    return out;
+  }
+  function describe() {
+    var g = byQuad();
+    return Object.keys(QUADS).map(function (k) { return QUADS[k].name + ": " + (g[k].length ? g[k].join(", ") : "none"); }).join(". ") + ".";
+  }
+  function renderSummary() {
+    if (!state.items.length) { $("summary").innerHTML = "<p>Your assumptions will appear here as numbered dots.</p>"; return; }
+    var g = byQuad();
+    $("summary").innerHTML = Object.keys(QUADS).map(function (k) {
+      return "<p><strong>" + esc(QUADS[k].name) + ":</strong> " + (g[k].length ? "assumption " + g[k].join(", ") : "none") + "</p>";
+    }).join("");
+  }
+
+  function activate(g) {
+    var li = $("item-" + g.dataset.id); if (!li) return;
+    li.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    li.querySelector("textarea").focus({ preventScroll: true });
+    li.classList.add("is-flash"); setTimeout(function () { li.classList.remove("is-flash"); }, 1200);
+  }
+  $("map").addEventListener("click", function (e) { var g = e.target.closest("[data-id]"); if (g) activate(g); });
+  $("map").addEventListener("keydown", function (e) {
+    var g = e.target.closest("[data-id]");
+    if (g && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); activate(g); }
+  });
+
+  /* ==================================================================
+     Test plan
+     ================================================================== */
+  function testItems() {
+    return state.items.map(function (it, i) { return { it: it, n: i + 1 }; })
+      .filter(function (x) { return quad(x.it) === "test"; })
+      .sort(function (a, b) { return (b.it.imp - b.it.ev) - (a.it.imp - a.it.ev) || b.it.imp - a.it.imp; });
+  }
+  var lastTestKey = "";
+  function renderTests(textOnly) {
+    var list = testItems();
+    var key = list.map(function (x) { return x.it.id; }).join(",");
+    if (textOnly && key === lastTestKey) {
+      list.forEach(function (x) { var h = document.querySelector('#tests [data-id="' + x.it.id + '"] h3'); if (h) h.textContent = x.n + ". " + x.it.text; });
+      return;
+    }
+    if (key === lastTestKey && !textOnly && $("tests").children.length === list.length) {
+      list.forEach(function (x) { var h = document.querySelector('#tests [data-id="' + x.it.id + '"] h3'); if (h) h.textContent = x.n + ". " + x.it.text; });
+      return;
+    }
+    lastTestKey = key;
+    $("tests").innerHTML = list.map(function (x, rank) {
+      var it = x.it;
+      return '<li class="am-test" data-id="' + it.id + '">' +
+        "<h3>" + esc(x.n + ". " + it.text) + "</h3>" +
+        '<div class="am-test__grid">' +
+          '<div><label for="test-' + it.id + '">How could you test this quickly and cheaply?</label>' +
+          '<textarea id="test-' + it.id + '" data-tfield="test" maxlength="400">' + esc(it.test) + "</textarea></div>" +
+          '<div><label for="wrong-' + it.id + '">What result would tell you you’re wrong?</label>' +
+          '<textarea id="wrong-' + it.id + '" data-tfield="wrong" maxlength="400">' + esc(it.wrong) + "</textarea></div>" +
+        "</div></li>";
+    }).join("");
+    $("tests-empty").hidden = list.length > 0;
+  }
+  $("tests").addEventListener("input", function (e) {
+    var li = e.target.closest("[data-id]"), field = e.target.dataset.tfield;
+    if (!li || !field) return;
+    var it = state.items.find(function (x) { return x.id === li.dataset.id; });
+    it[field] = e.target.value; save();
+  });
+
+  /* ---------- Reflections ---------- */
+  var reflectFields = document.querySelectorAll("[data-reflect]");
+  function renderReflect() { reflectFields.forEach(function (f) { f.value = state.reflect[f.dataset.reflect] || ""; }); }
+  reflectFields.forEach(function (f) {
+    f.addEventListener("input", function () { state.reflect[f.dataset.reflect] = f.value; save(); });
+  });
+
+  /* ==================================================================
+     Save and export
+     ================================================================== */
+  function summary() {
+    var lines = [
+      "# Assumption Mapper",
+      "",
+      "Futures PlayLab, academyEX. Created " + new Date().toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }) + ".",
+      "",
+      "## Project",
+      "",
+      state.project.trim() || "_Not described yet._",
+      ""
+    ];
+    Object.keys(QUADS).forEach(function (k) {
+      var list = state.items.map(function (it, i) { return { it: it, n: i + 1 }; }).filter(function (x) { return quad(x.it) === k; });
+      if (!list.length) return;
+      lines.push("## " + QUADS[k].name + " (" + QUADS[k].desc.toLowerCase() + ")", "");
+      list.forEach(function (x) {
+        lines.push(x.n + ". " + x.it.text + " _(" + cat(x.it.cat).name + "; importance " + x.it.imp + "/5, evidence " + x.it.ev + "/5)_");
+      });
+      lines.push("");
+    });
+    var tests = testItems();
+    if (tests.length) {
+      lines.push("## Test plan", "");
+      tests.forEach(function (x) {
+        lines.push("**" + x.n + ". " + x.it.text + "**", "", "- How we’ll test it: " + (x.it.test.trim() || "_not planned yet_"),
+          "- We’re wrong if: " + (x.it.wrong.trim() || "_not decided yet_"), "");
+      });
+    }
+    lines.push("## Reflections", "");
+    document.querySelectorAll(".reflect label").forEach(function (lab) {
+      var key = $(lab.htmlFor).dataset.reflect;
+      lines.push("**" + lab.textContent + "**", "", (state.reflect[key] || "").trim() || "_No answer yet._", "");
+    });
+    return lines.join("\n");
+  }
+
+  var actions = {
+    image: function () {
+      if (!state.items.length) { PlayLab.toast("Add an assumption first, then download your map"); return; }
+      PlayLab.export.elementToPNG($("workspace"), PlayLab.export.filename(TOOL_ID, "png"))
+        .then(function () { PlayLab.toast("Image downloaded"); })
+        .catch(function (err) { PlayLab.toast(err.message); });
+    },
+    summary: function () {
+      PlayLab.export.markdown(PlayLab.export.filename(TOOL_ID + "-summary", "md"), summary());
+      PlayLab.toast("Summary downloaded");
+    },
+    save: function () {
+      PlayLab.export.saveFile(TOOL_ID, state);
+      PlayLab.toast("Copy saved to your downloads");
+    },
+    open: function () {
+      PlayLab.export.openSaveFile(TOOL_ID).then(function (data) {
+        state = Object.assign(fresh(), data);
+        save(); renderAll();
+        PlayLab.toast("Copy opened");
+      }).catch(function (err) {
+        if (err.message !== "cancelled") PlayLab.toast(err.message);
+      });
+    },
+    print: function () { PlayLab.export.print(); },
+    reset: function () {
+      if (!confirm("Start over? This clears your project, assumptions, test plan and reflections from this browser. Save a copy first if you want to keep them.")) return;
+      store.clear();
+      state = fresh();
+      renderAll();
+      PlayLab.toast("Cleared. Ready for a fresh start");
+    }
+  };
+  document.querySelectorAll("[data-action]").forEach(function (btn) {
+    btn.addEventListener("click", function () { actions[btn.dataset.action](); });
+  });
+
+  /* ==================================================================
+     Start
+     ================================================================== */
+  function renderAll() {
+    $("project").value = state.project;
+    lastTestKey = "";
+    renderCats(); renderList(); renderMap(); renderTests(); renderReflect();
+  }
+  renderAll();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="en-NZ">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Three Horizons Mapper | Futures PlayLab</title>
+  <meta name="description" content="Map what’s fading, what’s emerging and what you want to grow in your own field.">
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/css/playlab.css">
+  <script>try{var t=localStorage.getItem("playlab:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+  <style>
+    body { --h1: var(--literacy); --h2: var(--design); --h3: var(--futures); }
+    .th-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 1rem; align-items: start; }
+    .th-view { position: sticky; top: 5.5rem; }
+    @media (max-width: 980px) { .th-layout { grid-template-columns: minmax(0, 1fr); } .th-view { position: static; } }
+    .th-edit h2, .th-view h2 { font-size: var(--step-2); }
+
+    .th-topic { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.75rem; align-items: end; }
+    @media (max-width: 520px) { .th-topic { grid-template-columns: minmax(0, 1fr); } }
+    .th-topic select { width: auto; min-width: 9rem; }
+    .th-topic__foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
+
+    .th-h { margin-top: 1.25rem; padding: 1rem; border: 1px solid var(--line); border-top: 6px solid var(--hc); border-radius: var(--radius-md); background: var(--bg); }
+    .th-h[data-h="h1"] { --hc: var(--h1); }
+    .th-h[data-h="h2"] { --hc: var(--h2); }
+    .th-h[data-h="h3"] { --hc: var(--h3); }
+    .th-h h3 { margin: 0 0 0.35rem; }
+    .th-h__step { font-size: var(--step--1); font-weight: 700; color: var(--ink-soft); margin: 0 0 0.25rem; }
+    .th-h__help { margin: 0 0 0.75rem; color: var(--ink-soft); }
+    .th-items { list-style: none; margin: 0.75rem 0 0; padding: 0; display: grid; gap: 0.5rem; }
+    .th-item { padding: 0.6rem 0.7rem; background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--hc); border-radius: var(--radius-sm); }
+    .th-item.is-flash { box-shadow: 0 0 0 3px var(--hc); }
+    .th-item__top { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0.5rem; align-items: start; }
+    .th-badge { display: inline-grid; place-items: center; min-width: 1.75rem; height: 1.75rem; padding: 0 0.3rem; border-radius: 999px; background: var(--hc); color: var(--on-accent); font-weight: 700; font-size: 0.85rem; }
+    .th-item textarea { min-height: 2.75rem; padding: 0.45rem 0.6rem; }
+    .th-item__opts { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem; }
+    .th-item__opts button { font: inherit; font-size: 0.82rem; font-weight: 700; min-height: 34px; padding: 0.15rem 0.7rem; border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+    .th-item__opts button:hover { border-color: var(--ink); }
+    .th-item__opts button[aria-pressed="true"] { background: var(--hc); border-color: var(--hc); color: var(--on-accent); }
+
+    /* Chart */
+    .th-svg { display: block; width: 100%; height: auto; }
+    .th-svg text { font-family: var(--font-body); font-size: 14px; fill: var(--ink-soft); }
+    .th-curve { fill: none; stroke-width: 5; stroke-linecap: round; }
+    .th-curve--h1 { stroke: var(--h1); }
+    .th-curve--h2 { stroke: var(--h2); }
+    .th-curve--h3 { stroke: var(--h3); }
+    .th-axis { stroke: var(--ink-soft); stroke-width: 1.5; }
+    .th-svg .th-clabel { font-weight: 700; font-size: 15px; }
+    .th-svg .th-clabel--h1 { fill: var(--h1); }
+    .th-svg .th-clabel--h2 { fill: var(--h2); }
+    .th-svg .th-clabel--h3 { fill: var(--h3); }
+    .th-dot circle.th-dot__body { stroke: var(--surface); stroke-width: 2; }
+    .th-dot--h1 circle.th-dot__body { fill: var(--h1); }
+    .th-dot--h2 circle.th-dot__body { fill: var(--h2); }
+    .th-dot--h3 circle.th-dot__body { fill: var(--h3); }
+    .th-dot.is-propping circle.th-dot__body { fill: var(--surface); stroke: var(--h2); stroke-width: 2.5; stroke-dasharray: 4 3; }
+    .th-svg .th-dot text { fill: var(--on-accent); font-weight: 700; font-size: 13px; }
+    .th-svg .th-dot.is-propping text { fill: var(--h2); }
+    .th-dot .th-ring { fill: none; stroke: var(--h1); stroke-width: 3; }
+    .th-dot { cursor: pointer; }
+    .th-dot:focus { outline: none; }
+    .th-dot:hover circle.th-dot__body, .th-dot:focus-visible circle.th-dot__body { stroke: var(--ink); stroke-width: 3.5; stroke-dasharray: none; }
+
+    .th-legend { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-top: 1rem; font-size: var(--step--1); }
+    @media (max-width: 620px) { .th-legend { grid-template-columns: minmax(0, 1fr); } }
+    .th-legend h3 { font-size: var(--step-0); margin: 0 0 0.35rem; }
+    .th-legend ol { margin: 0; padding-left: 1.3rem; }
+    .th-legend li { margin-bottom: 0.25rem; }
+    .th-legend li::marker { font-weight: 700; }
+    .th-legend [data-h="h1"] li::marker { color: var(--h1); }
+    .th-legend [data-h="h2"] li::marker { color: var(--h2); }
+    .th-legend [data-h="h3"] li::marker { color: var(--h3); }
+    .th-legend em { color: var(--ink-soft); }
+    .th-key { margin: 0.75rem 0 0; font-size: var(--step--1); color: var(--ink-soft); }
+
+    @media print {
+      .th-edit { display: none; }
+      .th-layout { display: block; }
+      .th-view { position: static; }
+    }
+  </style>
+</head>
+
+<body class="cat-futures" data-tool="three-horizons">
+
+<main id="main" class="page tool-page">
+
+  <header class="tool-intro">
+    <p class="tool-intro__cat"><a href="../../#futures" data-pl-category-link data-pl="category">Futures thinking</a></p>
+    <h1 data-pl="name">Three Horizons Mapper</h1>
+    <p class="lede" data-pl="description">Map what’s fading, what’s emerging and what you want to grow in your own field.</p>
+    <dl class="tool-intro__meta">
+      <div><dt>Time</dt><dd data-pl="minutes">20 minutes</dd></div>
+      <div><dt>You leave with</dt><dd data-pl="output">A three horizons map</dd></div>
+    </dl>
+  </header>
+
+  <section class="tool-steps" aria-labelledby="how-title">
+    <h2 id="how-title">How it works</h2>
+    <ol>
+      <li>Name the area you want to explore, such as how your sector delivers a service.</li>
+      <li>Horizon 1: describe how things work now, and mark what’s worth keeping.</li>
+      <li>Horizon 3: describe the future you want, and where you already see hints of it.</li>
+      <li>Horizon 2: list the changes and experiments in between. Decide whether each one leads towards Horizon 3 or props up Horizon 1.</li>
+      <li>Look at the map and reflect on where to put your energy.</li>
+    </ol>
+  </section>
+
+  <div class="th-layout">
+
+    <section class="panel th-edit" aria-labelledby="edit-title">
+      <h2 id="edit-title">Build your map</h2>
+      <div class="th-topic">
+        <div>
+          <label for="topic">What area are you exploring?</label>
+          <input type="text" id="topic" maxlength="120" placeholder="For example, how people in Aotearoa get to work">
+        </div>
+        <div>
+          <label for="years">Looking ahead</label>
+          <select id="years">
+            <option value="10">10 years</option>
+            <option value="15">15 years</option>
+            <option value="20">20 years</option>
+            <option value="25">25 years</option>
+          </select>
+        </div>
+      </div>
+      <div class="th-topic__foot">
+        <p class="hint" style="margin:0">Pick something you know well, ideally from your own work.</p>
+        <button class="btn btn--small" type="button" id="example-btn">Try an example</button>
+      </div>
+      <div id="horizons"></div>
+    </section>
+
+    <section class="panel th-view" id="workspace" aria-labelledby="view-title">
+      <h2 id="view-title">Your three horizons</h2>
+      <p id="view-topic" class="hint" style="margin-top:-0.25rem"></p>
+      <div id="chart"></div>
+      <p class="th-key">Ringed: worth keeping from Horizon 1. Dashed: props up Horizon 1. Solid Horizon 2 dots lead towards Horizon 3.</p>
+      <div class="th-legend" id="legend"></div>
+    </section>
+
+  </div>
+
+  <section class="tool-actions" aria-label="Save and export">
+    <p class="tool-actions__note">Your work saves automatically in this browser.</p>
+    <div class="tool-actions__buttons">
+      <button class="btn btn--small" type="button" data-action="image">Download image</button>
+      <button class="btn btn--small" type="button" data-action="summary">Download summary</button>
+      <button class="btn btn--small" type="button" data-action="save">Save a copy</button>
+      <button class="btn btn--small" type="button" data-action="open">Open a copy</button>
+      <button class="btn btn--small" type="button" data-action="print">Print or save as PDF</button>
+      <button class="btn btn--small btn--danger" type="button" data-action="reset">Start over</button>
+    </div>
+  </section>
+
+  <section class="reflect" aria-labelledby="reflect-title">
+    <h2 id="reflect-title">Reflect</h2>
+    <p>Jot down a few thoughts. These save with the rest of your work.</p>
+    <ol>
+      <li>
+        <label for="r1">What from Horizon 1 is worth carrying forward as things change? Who would miss it if it disappeared?</label>
+        <textarea id="r1" data-reflect="keep"></textarea>
+      </li>
+      <li>
+        <label for="r2">Which Horizon 2 changes genuinely lead towards your Horizon 3, and which mostly keep the current system going?</label>
+        <textarea id="r2" data-reflect="transition"></textarea>
+      </li>
+      <li>
+        <label for="r3">What’s one small thing you or your organisation could do this year to grow a pocket of your Horizon 3?</label>
+        <textarea id="r3" data-reflect="action"></textarea>
+      </li>
+    </ol>
+  </section>
+
+</main>
+
+<script src="../../assets/js/tools.js"></script>
+<script src="../../assets/js/playlab.js"></script>
+
+<script>
+(function () {
+  "use strict";
+
+  var TOOL_ID = "three-horizons";
+  var MAX = 8;
+  var THIS_YEAR = new Date().getFullYear();
+
+  var H = [
+    { id: "h1", step: "Step 1", name: "Horizon 1: The way things are now",
+      help: "Today’s dominant way of doing things. What’s familiar, but starting to struggle or no longer fits?",
+      placeholder: "For example, commuting by car five days a week", add: "Add to Horizon 1" },
+    { id: "h3", step: "Step 2", name: "Horizon 3: The future you want",
+      help: "A different way of doing things that fits the world ahead. Where can you already see small pockets of it today?",
+      placeholder: "For example, most trips are by foot, bike or shared electric transport", add: "Add to Horizon 3" },
+    { id: "h2", step: "Step 3", name: "Horizon 2: The changes in between",
+      help: "Innovations and experiments happening now. Some lead towards Horizon 3. Others just prop up Horizon 1 for a while longer.",
+      placeholder: "For example, hybrid work two or three days a week", add: "Add to Horizon 2" }
+  ];
+  var CHART_ORDER = ["h1", "h2", "h3"];
+  var LABEL = { h1: "Horizon 1", h2: "Horizon 2", h3: "Horizon 3" };
+
+  var EXAMPLE = {
+    topic: "How people in Aotearoa get to work", years: 15,
+    h1: [["Commuting by private car, five days a week", false], ["Building more roads to ease congestion", false], ["Reliable, predictable travel times", true]],
+    h3: [["Most trips are by foot, bike or shared electric transport", ""], ["Work happens close to home, in local hubs", ""]],
+    h2: [["Hybrid work two or three days a week", "h3"], ["Electric cars replacing petrol cars one for one", "h1"], ["E-bike subsidies", "h3"], ["Extra motorway lanes for electric vehicles", "h1"], ["Congestion charging", "h3"]]
+  };
+
+  var EMPTY = { topic: "", years: 15, h1: [], h2: [], h3: [], reflect: {} };
+  function fresh() { return JSON.parse(JSON.stringify(EMPTY)); }
+  var store = PlayLab.store(TOOL_ID);
+  var state = Object.assign(fresh(), store.get("state", {}) || {});
+  function save() { store.set("state", state); }
+
+  var esc = PlayLab.escape;
+  var $ = function (id) { return document.getElementById(id); };
+  function uid() { return "x" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
+
+  /* ==================================================================
+     Topic
+     ================================================================== */
+  $("topic").addEventListener("input", function (e) { state.topic = e.target.value; save(); renderTopic(); });
+  $("years").addEventListener("change", function (e) { state.years = Number(e.target.value); save(); renderChart(); renderTopic(); });
+  function renderTopic() {
+    $("view-topic").textContent = (state.topic.trim() ? state.topic.trim() + ". " : "") + "Looking ahead to " + (THIS_YEAR + state.years) + ".";
+  }
+
+  $("example-btn").addEventListener("click", function () {
+    var started = state.topic.trim() || state.h1.length || state.h2.length || state.h3.length;
+    if (started && !confirm("Replace your map with an example?")) return;
+    state.topic = EXAMPLE.topic; state.years = EXAMPLE.years;
+    state.h1 = EXAMPLE.h1.map(function (x) { return { id: uid(), text: x[0], keep: x[1] }; });
+    state.h3 = EXAMPLE.h3.map(function (x) { return { id: uid(), text: x[0] }; });
+    state.h2 = EXAMPLE.h2.map(function (x) { return { id: uid(), text: x[0], dir: x[1] }; });
+    save(); renderAll();
+    PlayLab.toast("Example loaded. Try adding your own ideas");
+  });
+
+  /* ==================================================================
+     Horizon editors
+     ================================================================== */
+  function optsHTML(h, it) {
+    if (h === "h1") {
+      return '<div class="th-item__opts"><button type="button" data-opt="keep" aria-pressed="' + !!it.keep + '">Worth keeping</button></div>';
+    }
+    if (h === "h2") {
+      return '<div class="th-item__opts" role="group" aria-label="Where does this lead?">' +
+        '<button type="button" data-opt="dir" data-val="h3" aria-pressed="' + (it.dir === "h3") + '">Leads towards Horizon 3</button>' +
+        '<button type="button" data-opt="dir" data-val="h1" aria-pressed="' + (it.dir === "h1") + '">Props up Horizon 1</button></div>';
+    }
+    return "";
+  }
+  function itemsHTML(h) {
+    return state[h].map(function (it, i) {
+      return '<li class="th-item" id="item-' + it.id + '" data-id="' + it.id + '">' +
+        '<div class="th-item__top"><span class="th-badge" aria-hidden="true">' + (i + 1) + "</span>" +
+        '<div><label class="visually-hidden" for="t-' + it.id + '">' + LABEL[h] + ", item " + (i + 1) + "</label>" +
+        '<textarea id="t-' + it.id + '" maxlength="120" data-field="text">' + esc(it.text) + "</textarea></div>" +
+        '<button class="btn btn--quiet btn--small" type="button" data-remove aria-label="Remove ' + LABEL[h] + " item " + (i + 1) + '">Remove</button></div>' +
+        optsHTML(h, it) + "</li>";
+    }).join("");
+  }
+  function renderHorizons() {
+    $("horizons").innerHTML = H.map(function (h) {
+      return '<section class="th-h" data-h="' + h.id + '" aria-labelledby="hh-' + h.id + '">' +
+        '<p class="th-h__step">' + h.step + "</p>" +
+        '<h3 id="hh-' + h.id + '">' + esc(h.name) + "</h3>" +
+        '<p class="th-h__help">' + esc(h.help) + "</p>" +
+        '<form data-add="' + h.id + '"><label class="visually-hidden" for="add-' + h.id + '">' + esc(h.add) + "</label>" +
+        '<div class="inline-form__row"><input type="text" id="add-' + h.id + '" maxlength="120" autocomplete="off" placeholder="' + esc(h.placeholder) + '">' +
+        '<button class="btn" type="submit">Add</button></div></form>' +
+        '<ol class="th-items" data-items="' + h.id + '">' + itemsHTML(h.id) + "</ol></section>";
+    }).join("");
+  }
+  function refreshItems(h) {
+    document.querySelector('[data-items="' + h + '"]').innerHTML = itemsHTML(h);
+  }
+  function locate(el) {
+    var sec = el.closest("[data-h]"), li = el.closest("[data-id]");
+    if (!sec || !li) return null;
+    var h = sec.dataset.h;
+    return { h: h, li: li, it: state[h].find(function (x) { return x.id === li.dataset.id; }) };
+  }
+
+  $("horizons").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var h = e.target.dataset.add, input = e.target.querySelector("input"), v = input.value.trim();
+    if (!v) { PlayLab.toast("Type something first"); input.focus(); return; }
+    if (state[h].length >= MAX) { PlayLab.toast(MAX + " is plenty for one horizon. Choose the most important"); return; }
+    var it = { id: uid(), text: v };
+    if (h === "h1") it.keep = false;
+    if (h === "h2") it.dir = "";
+    state[h].push(it);
+    input.value = "";
+    save(); refreshItems(h); renderChart();
+    input.focus();
+  });
+  $("horizons").addEventListener("input", function (e) {
+    if (e.target.dataset.field !== "text") return;
+    var f = locate(e.target); if (!f) return;
+    f.it.text = e.target.value; save(); renderLegend();
+  });
+  $("horizons").addEventListener("click", function (e) {
+    var opt = e.target.closest("[data-opt]"), rm = e.target.closest("[data-remove]");
+    if (!opt && !rm) return;
+    var f = locate(e.target); if (!f) return;
+    if (opt && opt.dataset.opt === "keep") {
+      f.it.keep = !f.it.keep; opt.setAttribute("aria-pressed", String(f.it.keep));
+    }
+    if (opt && opt.dataset.opt === "dir") {
+      f.it.dir = f.it.dir === opt.dataset.val ? "" : opt.dataset.val;
+      f.li.querySelectorAll('[data-opt="dir"]').forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.val === f.it.dir)); });
+    }
+    if (rm) {
+      state[f.h] = state[f.h].filter(function (x) { return x !== f.it; });
+      refreshItems(f.h);
+      $("add-" + f.h).focus();
+    }
+    save(); renderChart();
+  });
+
+  /* ==================================================================
+     The chart
+     ================================================================== */
+  var PATHS = {
+    h1: "M60 70 C 250 70, 380 300, 600 330",
+    h2: "M60 332 C 190 322, 250 118, 330 114 C 410 110, 470 300, 600 326",
+    h3: "M60 342 C 300 337, 430 118, 600 58"
+  };
+  var RANGE = { h1: [0.1, 0.58], h2: [0.22, 0.8], h3: [0.62, 0.95] };
+
+  function renderChart() {
+    var year = THIS_YEAR + state.years;
+    $("chart").innerHTML =
+      '<svg class="th-svg" viewBox="0 0 640 410" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch-t ch-d">' +
+      '<title id="ch-t">Three horizons map</title><desc id="ch-d">' + esc(describe()) + "</desc>" +
+      '<line class="th-axis" x1="60" y1="362" x2="600" y2="362"/>' +
+      '<line class="th-axis" x1="60" y1="40" x2="60" y2="362"/>' +
+      '<text x="60" y="386">Now</text><text x="600" y="386" text-anchor="end">' + year + "</text>" +
+      '<text x="330" y="404" text-anchor="middle" style="font-weight:700">Time</text>' +
+      '<text transform="translate(40 200) rotate(-90)" text-anchor="middle" style="font-weight:700">How widespread</text>' +
+      CHART_ORDER.map(function (h) { return '<path class="th-curve th-curve--' + h + '" d="' + PATHS[h] + '"/>'; }).join("") +
+      '<text class="th-clabel th-clabel--h1" x="72" y="56">Horizon 1</text>' +
+      '<text class="th-clabel th-clabel--h2" x="330" y="96" text-anchor="middle">Horizon 2</text>' +
+      '<text class="th-clabel th-clabel--h3" x="596" y="40" text-anchor="end">Horizon 3</text>' +
+      '<g id="dots"></g></svg>';
+
+    // Place numbered dots along each curve
+    var svg = $("chart").querySelector("svg");
+    var dots = "";
+    CHART_ORDER.forEach(function (h) {
+      var path = svg.querySelector(".th-curve--" + h), len = path.getTotalLength();
+      var list = state[h], r = RANGE[h];
+      list.forEach(function (it, i) {
+        var t = list.length === 1 ? (r[0] + r[1]) / 2 : r[0] + (r[1] - r[0]) * i / (list.length - 1);
+        var p = path.getPointAtLength(len * t);
+        var cls = "th-dot th-dot--" + h + (h === "h2" && it.dir === "h1" ? " is-propping" : "");
+        var desc = LABEL[h] + " item " + (i + 1) + ": " + it.text +
+          (it.keep ? ", worth keeping" : "") + (it.dir === "h3" ? ", leads towards Horizon 3" : it.dir === "h1" ? ", props up Horizon 1" : "");
+        dots += '<g class="' + cls + '" data-id="' + it.id + '" tabindex="0" role="button" aria-label="' + esc(desc) + '. Select to edit."' +
+          ' transform="translate(' + p.x.toFixed(1) + " " + p.y.toFixed(1) + ')">' +
+          (it.keep ? '<circle class="th-ring" r="17"/>' : "") +
+          '<circle class="th-dot__body" r="12"/><text text-anchor="middle" y="4.5">' + (i + 1) + "</text></g>";
+      });
+    });
+    svg.querySelector("#dots").innerHTML = dots;
+    renderLegend();
+  }
+
+  function describe() {
+    return CHART_ORDER.map(function (h) { return LABEL[h] + ": " + state[h].length + " items"; }).join(". ") + ".";
+  }
+
+  function renderLegend() {
+    $("legend").innerHTML = CHART_ORDER.map(function (h) {
+      var list = state[h];
+      return '<div data-h="' + h + '"><h3>' + LABEL[h] + "</h3>" +
+        (list.length ? "<ol>" + list.map(function (it) {
+          var note = it.keep ? " <em>(worth keeping)</em>" : it.dir === "h3" ? " <em>(towards H3)</em>" : it.dir === "h1" ? " <em>(props up H1)</em>" : "";
+          return "<li>" + esc(it.text || "Untitled") + note + "</li>";
+        }).join("") + "</ol>" : '<p class="hint" style="margin:0">Nothing yet.</p>') + "</div>";
+    }).join("");
+  }
+
+  function activate(g) {
+    var li = $("item-" + g.dataset.id); if (!li) return;
+    li.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    li.querySelector("textarea").focus({ preventScroll: true });
+    li.classList.add("is-flash"); setTimeout(function () { li.classList.remove("is-flash"); }, 1200);
+  }
+  $("chart").addEventListener("click", function (e) { var g = e.target.closest("[data-id]"); if (g) activate(g); });
+  $("chart").addEventListener("keydown", function (e) {
+    var g = e.target.closest("[data-id]");
+    if (g && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); activate(g); }
+  });
+
+  /* ---------- Reflections ---------- */
+  var reflectFields = document.querySelectorAll("[data-reflect]");
+  function renderReflect() { reflectFields.forEach(function (f) { f.value = state.reflect[f.dataset.reflect] || ""; }); }
+  reflectFields.forEach(function (f) {
+    f.addEventListener("input", function () { state.reflect[f.dataset.reflect] = f.value; save(); });
+  });
+
+  /* ==================================================================
+     Save and export
+     ================================================================== */
+  function summary() {
+    var lines = [
+      "# Three Horizons Map: " + (state.topic.trim() || "Untitled"),
+      "",
+      "Futures PlayLab, academyEX. Created " + new Date().toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }) + ". Looking ahead to " + (THIS_YEAR + state.years) + ".",
+      ""
+    ];
+    var titles = { h1: "Horizon 1: The way things are now", h2: "Horizon 2: The changes in between", h3: "Horizon 3: The future you want" };
+    CHART_ORDER.forEach(function (h) {
+      lines.push("## " + titles[h], "");
+      if (!state[h].length) lines.push("_Nothing yet._");
+      state[h].forEach(function (it, i) {
+        var note = it.keep ? " _(worth keeping)_" : it.dir === "h3" ? " _(leads towards Horizon 3)_" : it.dir === "h1" ? " _(props up Horizon 1)_" : "";
+        lines.push((i + 1) + ". " + it.text + note);
+      });
+      lines.push("");
+    });
+    lines.push("## Reflections", "");
+    document.querySelectorAll(".reflect label").forEach(function (lab) {
+      var key = $(lab.htmlFor).dataset.reflect;
+      lines.push("**" + lab.textContent + "**", "", (state.reflect[key] || "").trim() || "_No answer yet._", "");
+    });
+    return lines.join("\n");
+  }
+
+  var actions = {
+    image: function () {
+      PlayLab.export.elementToPNG($("workspace"), PlayLab.export.filename(TOOL_ID, "png"))
+        .then(function () { PlayLab.toast("Image downloaded"); })
+        .catch(function (err) { PlayLab.toast(err.message); });
+    },
+    summary: function () {
+      PlayLab.export.markdown(PlayLab.export.filename(TOOL_ID + "-summary", "md"), summary());
+      PlayLab.toast("Summary downloaded");
+    },
+    save: function () {
+      PlayLab.export.saveFile(TOOL_ID, state);
+      PlayLab.toast("Copy saved to your downloads");
+    },
+    open: function () {
+      PlayLab.export.openSaveFile(TOOL_ID).then(function (data) {
+        state = Object.assign(fresh(), data);
+        save(); renderAll();
+        PlayLab.toast("Copy opened");
+      }).catch(function (err) {
+        if (err.message !== "cancelled") PlayLab.toast(err.message);
+      });
+    },
+    print: function () { PlayLab.export.print(); },
+    reset: function () {
+      if (!confirm("Start over? This clears your map and reflections from this browser. Save a copy first if you want to keep them.")) return;
+      store.clear();
+      state = fresh();
+      renderAll();
+      PlayLab.toast("Cleared. Ready for a fresh start");
+    }
+  };
+  document.querySelectorAll("[data-action]").forEach(function (btn) {
+    btn.addEventListener("click", function () { actions[btn.dataset.action](); });
+  });
+
+  /* ==================================================================
+     Start
+     ================================================================== */
+  function renderAll() {
+    $("topic").value = state.topic;
+    $("years").value = String(state.years);
+    renderHorizons(); renderChart(); renderTopic(); renderReflect();
+  }
+  renderAll();
+})();
+</script>
+</body>
+</html>

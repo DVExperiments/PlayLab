@@ -75,7 +75,7 @@ window.PLAYLAB_TOOLS = {
       description: "Map what’s fading, what’s emerging and what you want to grow in your own field.",
       minutes: 20,
       output: "A three horizons map",
-      status: "planned"
+      status: "live"
     },
     {
       id: "backcasting",
@@ -107,7 +107,7 @@ window.PLAYLAB_TOOLS = {
       description: "Plot your assumptions by importance and evidence to find what to test first.",
       minutes: 15,
       output: "A prioritised test list",
-      status: "planned"
+      status: "live"
     },
     {
       id: "pre-mortem",
