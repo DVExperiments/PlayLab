@@ -1,0 +1,207 @@
+<!doctype html>
+<!--
+  ===========================================================================
+  FUTURES PLAYLAB TOOL TEMPLATE
+
+  To start a new tool:
+    1. Copy this whole folder to its category folder, e.g. futures/futures-wheel/
+    2. Set data-tool on <body> to the tool's id from assets/js/tools.js
+       (the title, description, time and output then fill in automatically)
+    3. Replace the "How it works" steps, the workspace and the reflection questions
+    4. Set TOOL_ID in the script at the bottom to the same id
+    5. When it's ready, change the tool's status to "live" in assets/js/tools.js
+
+  The parts marked KEEP are the same on every tool. The parts marked REPLACE
+  are this example's content.
+  ===========================================================================
+-->
+<html lang="en-NZ">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tool template | Futures PlayLab</title>
+  <meta name="description" content="A starting point for new Futures PlayLab tools.">
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/css/playlab.css">
+  <script>try{var t=localStorage.getItem("playlab:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+  <style>
+    /* Tool-specific styles go here. Use the shared variables, e.g. var(--accent). */
+  </style>
+</head>
+
+<!-- REPLACE data-tool with the tool's id. The class sets the colour until the registry loads. -->
+<body class="cat-futures" data-tool="tool-template">
+
+<main id="main" class="page tool-page">
+
+  <!-- KEEP: intro. Filled from assets/js/tools.js; the text here is only a fallback. -->
+  <header class="tool-intro">
+    <p class="tool-intro__cat"><a href="../../" data-pl-category-link data-pl="category">Tool template</a></p>
+    <h1 data-pl="name">Tool template</h1>
+    <p class="lede" data-pl="description">A working example of the parts every PlayLab tool shares. Copy this folder to start a new tool.</p>
+    <dl class="tool-intro__meta">
+      <div><dt>Time</dt><dd data-pl="minutes">5 minutes</dd></div>
+      <div><dt>You leave with</dt><dd data-pl="output">A list of ideas</dd></div>
+    </dl>
+  </header>
+
+  <!-- REPLACE: the steps for this tool -->
+  <section class="tool-steps" aria-labelledby="how-title">
+    <h2 id="how-title">How it works</h2>
+    <ol>
+      <li>Add a few ideas using the box below.</li>
+      <li>Download an image or save a copy of your list.</li>
+      <li>Answer the reflection questions at the end.</li>
+    </ol>
+  </section>
+
+  <!-- REPLACE: the workspace. Keep id="workspace" so the image export knows what to capture. -->
+  <section id="workspace" class="panel" aria-labelledby="ws-title">
+    <h2 id="ws-title">Your ideas</h2>
+    <form id="add-form" class="no-print">
+      <label for="idea-input">Add an idea</label>
+      <div class="inline-form__row">
+        <input id="idea-input" type="text" autocomplete="off" maxlength="200" placeholder="For example, a four-day week for everyone">
+        <button class="btn btn--primary" type="submit">Add idea</button>
+      </div>
+    </form>
+    <ul id="idea-list" class="item-list"></ul>
+    <p id="idea-empty" class="empty">No ideas yet. Add your first one above.</p>
+  </section>
+
+  <!-- KEEP: save and export bar. Remove any button the tool doesn't need. -->
+  <section class="tool-actions" aria-label="Save and export">
+    <p class="tool-actions__note">Your work saves automatically in this browser.</p>
+    <div class="tool-actions__buttons">
+      <button class="btn btn--small" type="button" data-action="image">Download image</button>
+      <button class="btn btn--small" type="button" data-action="save">Save a copy</button>
+      <button class="btn btn--small" type="button" data-action="open">Open a copy</button>
+      <button class="btn btn--small" type="button" data-action="print">Print or save as PDF</button>
+      <button class="btn btn--small btn--danger" type="button" data-action="reset">Start over</button>
+    </div>
+  </section>
+
+  <!-- KEEP the structure, REPLACE the questions. Each textarea needs a unique data-reflect key. -->
+  <section class="reflect" aria-labelledby="reflect-title">
+    <h2 id="reflect-title">Reflect</h2>
+    <p>Jot down a few thoughts. These save with the rest of your work.</p>
+    <ol>
+      <li>
+        <label for="r1">Which idea surprised you most, and why?</label>
+        <textarea id="r1" data-reflect="surprise"></textarea>
+      </li>
+      <li>
+        <label for="r2">How might one of these ideas play out in your own organisation?</label>
+        <textarea id="r2" data-reflect="context"></textarea>
+      </li>
+    </ol>
+  </section>
+
+</main>
+
+<!-- KEEP: shared scripts -->
+<script src="../../assets/js/tools.js"></script>
+<script src="../../assets/js/playlab.js"></script>
+
+<!-- REPLACE: tool logic -->
+<script>
+(function () {
+  "use strict";
+
+  var TOOL_ID = "tool-template";            // must match data-tool and the registry id
+  var EMPTY = { ideas: [], reflect: {} };   // the shape of this tool's saved data
+
+  var store = PlayLab.store(TOOL_ID);
+  var state = store.get("state", null) || JSON.parse(JSON.stringify(EMPTY));
+
+  var form = document.getElementById("add-form");
+  var input = document.getElementById("idea-input");
+  var list = document.getElementById("idea-list");
+  var empty = document.getElementById("idea-empty");
+  var reflectFields = document.querySelectorAll("[data-reflect]");
+
+  function save() { store.set("state", state); }
+
+  function render() {
+    list.innerHTML = "";
+    state.ideas.forEach(function (text, i) {
+      var li = document.createElement("li");
+      li.className = "item";
+      var span = document.createElement("span");
+      span.textContent = text;            // textContent keeps typed text safe
+      var del = document.createElement("button");
+      del.type = "button";
+      del.className = "btn btn--quiet btn--small no-print";
+      del.textContent = "Remove";
+      del.setAttribute("aria-label", "Remove “" + text + "”");
+      del.addEventListener("click", function () {
+        state.ideas.splice(i, 1);
+        save(); render();
+        PlayLab.toast("Idea removed");
+        input.focus();
+      });
+      li.append(span, del);
+      list.append(li);
+    });
+    empty.hidden = state.ideas.length > 0;
+    reflectFields.forEach(function (f) { f.value = state.reflect[f.dataset.reflect] || ""; });
+  }
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var text = input.value.trim();
+    if (!text) { PlayLab.toast("Type an idea first"); input.focus(); return; }
+    state.ideas.push(text);
+    input.value = "";
+    save(); render();
+    input.focus();
+  });
+
+  reflectFields.forEach(function (f) {
+    f.addEventListener("input", function () {
+      state.reflect[f.dataset.reflect] = f.value;
+      save();
+    });
+  });
+
+  // Save and export actions
+  var actions = {
+    image: function () {
+      PlayLab.export.elementToPNG(document.getElementById("workspace"), PlayLab.export.filename(TOOL_ID, "png"))
+        .then(function () { PlayLab.toast("Image downloaded"); })
+        .catch(function (err) { PlayLab.toast(err.message); });
+    },
+    save: function () {
+      PlayLab.export.saveFile(TOOL_ID, state);
+      PlayLab.toast("Copy saved to your downloads");
+    },
+    open: function () {
+      PlayLab.export.openSaveFile(TOOL_ID).then(function (data) {
+        state = Object.assign(JSON.parse(JSON.stringify(EMPTY)), data);
+        save(); render();
+        PlayLab.toast("Copy opened");
+      }).catch(function (err) {
+        if (err.message !== "cancelled") PlayLab.toast(err.message);
+      });
+    },
+    print: function () { PlayLab.export.print(); },
+    reset: function () {
+      if (!confirm("Start over? This clears your ideas and reflections from this browser. Save a copy first if you want to keep them.")) return;
+      store.clear();
+      state = JSON.parse(JSON.stringify(EMPTY));
+      render();
+      PlayLab.toast("Cleared. Ready for a fresh start");
+    }
+  };
+  document.querySelectorAll("[data-action]").forEach(function (btn) {
+    btn.addEventListener("click", function () { actions[btn.dataset.action](); });
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

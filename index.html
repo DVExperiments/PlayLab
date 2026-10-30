@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en-NZ">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Futures PlayLab | academyEX</title>
+  <meta name="description" content="Hands-on tools for exploring digital literacy, design thinking and futures thinking, from the Futures PlayLab at academyEX.">
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/playlab.css">
+  <script>try{var t=localStorage.getItem("playlab:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body>
+
+<main id="main" class="page">
+
+  <section class="hero" aria-labelledby="hero-title">
+    <div>
+      <h1 id="hero-title">Try the future on for size.</h1>
+      <p class="lede">Hands-on tools for thinking about technology, design and the futures we’re heading towards. You don’t need to be a technical expert or have a finished project. Bring your curiosity, your questions and your context.</p>
+      <div class="hero__actions">
+        <a class="btn btn--primary" href="#tools">Browse the tools</a>
+        <a class="btn" href="about/">About the PlayLab</a>
+      </div>
+    </div>
+
+    <!-- The futures cone: the range of futures widens the further out we look -->
+    <svg class="cone" viewBox="0 0 560 390" role="img" aria-labelledby="cone-title cone-desc">
+      <title id="cone-title">The futures cone</title>
+      <desc id="cone-desc">From a single point labelled now, three nested bands widen to the right: probable, plausible and possible futures. A line traces a path towards a preferable future.</desc>
+      <path class="cone__band cone__band--possible"  d="M48 190 L520 30 Q544 190 520 350 Z"/>
+      <path class="cone__band cone__band--plausible" d="M48 190 L520 85 Q538 190 520 295 Z"/>
+      <path class="cone__band cone__band--probable"  d="M48 190 L520 140 Q530 190 520 240 Z"/>
+      <path class="cone__preferable" d="M48 190 C 200 192, 340 160, 504 106"/>
+      <circle class="cone__now" cx="48" cy="190" r="7"/>
+      <g class="cone__labels">
+        <circle class="cone__target" cx="504" cy="106" r="7"/>
+        <text class="cone__label cone__label--pref" x="492" y="88" text-anchor="end">Preferable</text>
+        <text class="cone__label cone__label--strong" x="48" y="222" text-anchor="middle">Now</text>
+        <text class="cone__label" x="400" y="196">Probable</text>
+        <text class="cone__label" x="400" y="258">Plausible</text>
+        <text class="cone__label" x="400" y="300">Possible</text>
+        <line class="cone__axis" x1="48" y1="372" x2="520" y2="372"/>
+        <path class="cone__axis" d="M512 366 L520 372 L512 378" fill="none"/>
+        <text class="cone__label" x="510" y="362" text-anchor="end">Further out</text>
+      </g>
+    </svg>
+  </section>
+
+  <div id="tools" class="directory-wrap">
+    <h2 class="visually-hidden">Tools</h2>
+    <div id="tool-directory" class="directory">
+      <noscript><p>The tool list needs JavaScript turned on in your browser.</p></noscript>
+    </div>
+  </div>
+
+  <aside class="note" aria-labelledby="privacy-title">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 4 5.5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10v-6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="m8.5 12 2.5 2.5 4.5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div>
+      <h2 id="privacy-title">Your work stays with you</h2>
+      <p>Nothing you type into these tools is sent anywhere. Each tool saves your progress in this browser only, so use the download and save buttons to keep a copy, add it to an assignment, or share it with your cohort.</p>
+    </div>
+  </aside>
+
+</main>
+
+<script src="assets/js/tools.js"></script>
+<script src="assets/js/playlab.js"></script>
+</body>
+</html>
