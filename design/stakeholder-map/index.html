@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="en-NZ">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stakeholder Ecosystem Map | Futures PlayLab</title>
+  <meta name="description" content="Map who a technology touches, including the people and places easily left out.">
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/css/playlab.css">
+  <script>try{var t=localStorage.getItem("playlab:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+  <style>
+    body { --gain: var(--design); --lose: var(--danger); --mixed: var(--literacy); --unsure: var(--ink-soft); }
+    .sm-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 1rem; align-items: start; }
+    .sm-view { position: sticky; top: 5.5rem; max-height: calc(100vh - 7rem); overflow-y: auto; }
+    @media (max-width: 980px) { .sm-layout { grid-template-columns: minmax(0, 1fr); } .sm-view { position: static; max-height: none; } }
+    .sm-edit h2, .sm-view h2 { font-size: var(--step-2); }
+    .sm-block + .sm-block { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line); }
+    .sm-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
+    .sm-add { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 11rem) auto; gap: 0.5rem; align-items: end; }
+    @media (max-width: 600px) { .sm-add { grid-template-columns: minmax(0, 1fr); } }
+    .sm-rings-key { margin: 0.75rem 0 0; display: grid; gap: 0.25rem; font-size: var(--step--1); }
+    .sm-rings-key div { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr); gap: 0.5rem; }
+    .sm-rings-key dt { font-weight: 700; }
+    .sm-rings-key dd { margin: 0; color: var(--ink-soft); }
+
+    .sm-suggest { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem; }
+    .sm-suggest button { font: inherit; font-size: 0.85rem; min-height: 34px; padding: 0.15rem 0.7rem; border-radius: 999px; border: 1.5px dashed var(--accent); background: var(--surface); color: var(--ink); cursor: pointer; }
+    .sm-suggest button:hover { background: var(--accent-tint); }
+    .sm-suggest button::before { content: "+ "; font-weight: 700; color: var(--accent); }
+    .sm-kaitiaki { margin: 0.9rem 0 0; padding: 0.75rem 0.9rem; border-radius: var(--radius-md); background: var(--accent-tint); }
+
+    .sm-list { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; gap: 0.75rem; }
+    .sm-item { padding: 0.85rem 1rem; background: var(--bg); border: 1px solid var(--line); border-left: 5px solid var(--unsure); border-radius: var(--radius-md); }
+    .sm-item[data-impact="gain"] { border-left-color: var(--gain); }
+    .sm-item[data-impact="lose"] { border-left-color: var(--lose); }
+    .sm-item[data-impact="mixed"] { border-left-color: var(--mixed); }
+    .sm-item.is-flash { box-shadow: 0 0 0 3px var(--accent); }
+    .sm-item__top { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.5rem; align-items: center; }
+    .sm-item__top select { grid-column: 1 / -1; grid-row: 2; }
+    .sm-item__top input { font-weight: 700; }
+    .sm-opts { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.6rem; margin-top: 0.7rem; }
+    .sm-opt p { margin: 0 0 0.25rem; font-size: var(--step--1); font-weight: 700; }
+    .sm-seg { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+    .sm-seg button { flex: 1 1 auto; font: inherit; font-size: 0.82rem; font-weight: 700; min-height: 34px; padding: 0.15rem 0.5rem; border-radius: var(--radius-sm); border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+    .sm-seg button:hover { border-color: var(--ink); }
+    .sm-seg button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+    .sm-seg button[data-val="gain"][aria-pressed="true"] { background: var(--gain); border-color: var(--gain); color: var(--on-accent); }
+    .sm-seg button[data-val="lose"][aria-pressed="true"] { background: var(--lose); border-color: var(--lose); color: var(--surface); }
+    .sm-seg button[data-val="mixed"][aria-pressed="true"] { background: var(--mixed); border-color: var(--mixed); color: var(--surface); }
+    .sm-asked { display: flex; align-items: center; gap: 0.5rem; margin: 0.7rem 0 0; font-weight: 400; font-size: 0.95rem; cursor: pointer; }
+    .sm-asked input { width: 1.15rem; height: 1.15rem; accent-color: var(--accent); }
+    .sm-item textarea { min-height: 2.75rem; margin-top: 0.6rem; font-size: 0.95rem; }
+
+    /* Map */
+    .sm-svg { display: block; width: 100%; height: auto; }
+    .sm-ring { fill: var(--ink); stroke: var(--ink-soft); stroke-width: 1.5; }
+    .sm-ring, .sm-ringlabel, .sm-centre { pointer-events: none; }
+    .sm-ring--core { fill-opacity: 0.1; stroke-opacity: 0.5; }
+    .sm-ring--direct { fill-opacity: 0.065; stroke-opacity: 0.4; }
+    .sm-ring--indirect { fill-opacity: 0.035; stroke-opacity: 0.35; }
+    .sm-ring--wider { fill-opacity: 0.012; stroke-opacity: 0.35; stroke-dasharray: 6 6; }
+    .sm-svg text { font-family: var(--font-body); font-size: 15px; fill: var(--ink); }
+    .sm-svg .sm-ringlabel { font-size: 14px; font-weight: 700; fill: var(--ink-soft); }
+    .sm-centre circle { fill: var(--accent); }
+    .sm-svg .sm-centre text { fill: var(--on-accent); font-weight: 700; font-size: 14.5px; }
+    .sm-dot circle.sm-dot__body { stroke: var(--surface); stroke-width: 2.5; fill: var(--unsure); }
+    .sm-dot[data-impact="gain"] circle.sm-dot__body { fill: var(--gain); }
+    .sm-dot[data-impact="lose"] circle.sm-dot__body { fill: var(--lose); }
+    .sm-dot[data-impact="mixed"] circle.sm-dot__body { fill: var(--mixed); }
+    .sm-dot .sm-notasked { fill: none; stroke: var(--ink); stroke-width: 2; stroke-dasharray: 3 3; }
+    .sm-svg .sm-dot text { font-size: 15px; font-weight: 700; paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
+    .sm-dot { cursor: pointer; }
+    .sm-dot:focus { outline: none; }
+    .sm-dot:hover circle.sm-dot__body, .sm-dot:focus-visible circle.sm-dot__body { stroke: var(--ink); stroke-width: 3.5; }
+
+    .sm-key { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin: 0.75rem 0 0; font-size: var(--step--1); }
+    .sm-key span { display: inline-flex; align-items: center; gap: 0.35rem; }
+    .sm-key i { display: inline-block; width: 0.9rem; height: 0.9rem; border-radius: 999px; }
+    .sm-insights { margin-top: 1rem; display: grid; gap: 0.6rem; }
+    .sm-insight { padding: 0.75rem 0.9rem; border-radius: var(--radius-md); background: var(--bg); border: 1px solid var(--line); }
+    .sm-insight.is-alert { border-color: var(--danger); }
+    .sm-insight h3 { margin: 0 0 0.25rem; font-size: var(--step-0); font-family: var(--font-body); }
+    .sm-insight p { margin: 0; font-size: 0.95rem; }
+
+    @media print {
+      .sm-edit { display: none; }
+      .sm-layout { display: block; }
+      .sm-view { position: static; max-height: none; overflow: visible; }
+    }
+  </style>
+</head>
+
+<body class="cat-design" data-tool="stakeholder-map">
+
+<main id="main" class="page tool-page">
+
+  <header class="tool-intro">
+    <p class="tool-intro__cat"><a href="../../#design" data-pl-category-link data-pl="category">Design thinking</a></p>
+    <h1 data-pl="name">Stakeholder Ecosystem Map</h1>
+    <p class="lede" data-pl="description">Map who a technology touches, including the people and places easily left out.</p>
+    <dl class="tool-intro__meta">
+      <div><dt>Time</dt><dd data-pl="minutes">20 minutes</dd></div>
+      <div><dt>You leave with</dt><dd data-pl="output">A stakeholder map</dd></div>
+    </dl>
+  </header>
+
+  <section class="tool-steps" aria-labelledby="how-title">
+    <h2 id="how-title">How it works</h2>
+    <ol>
+      <li>Name the technology, service or change at the centre.</li>
+      <li>Add the people, groups and places it touches, and place each in a ring.</li>
+      <li>Use the “often left out” suggestions to find who you’ve missed.</li>
+      <li>For each one, note whether they gain or lose, how much say they have, and whether they’ve been asked.</li>
+      <li>Look at who carries the costs with little say, then reflect.</li>
+    </ol>
+  </section>
+
+  <div class="sm-layout">
+
+    <section class="panel sm-edit" aria-labelledby="edit-title">
+      <h2 id="edit-title">Who does it touch?</h2>
+
+      <div class="sm-block">
+        <label for="centre">What’s at the centre?</label>
+        <input type="text" id="centre" maxlength="80" placeholder="For example, an AI chatbot replacing the council’s phone line">
+        <div class="sm-row">
+          <p class="hint" style="margin:0">A technology or change from your own work is best.</p>
+          <button class="btn btn--small" type="button" id="example-btn">Try an example</button>
+        </div>
+      </div>
+
+      <form class="sm-block" id="add-form">
+        <div class="sm-add">
+          <div>
+            <label for="new-name">Add a stakeholder</label>
+            <input type="text" id="new-name" maxlength="40" autocomplete="off" placeholder="For example, frontline staff">
+          </div>
+          <div>
+            <label for="new-ring">How close?</label>
+            <select id="new-ring"></select>
+          </div>
+          <button class="btn btn--primary" type="submit">Add</button>
+        </div>
+        <dl class="sm-rings-key" id="rings-key"></dl>
+        <p class="label" style="margin:1rem 0 0" id="suggest-label">Often left out</p>
+        <div class="sm-suggest" id="suggest" role="group" aria-labelledby="suggest-label"></div>
+        <p class="sm-kaitiaki"><strong>Also ask:</strong> who are the kaitiaki, the guardians, of the places, people, knowledge or data this touches? Have they been part of the conversation?</p>
+      </form>
+
+      <div class="sm-block">
+        <ol class="sm-list" id="list" aria-label="Stakeholders"></ol>
+        <p class="empty" id="list-empty">No stakeholders yet. Start with whoever comes to mind first, then look further out.</p>
+      </div>
+    </section>
+
+    <section class="panel sm-view" id="workspace" aria-labelledby="map-title">
+      <h2 id="map-title">Your ecosystem</h2>
+      <div id="map"></div>
+      <div class="sm-key">
+        <span><i style="background:var(--gain)"></i>Gains</span>
+        <span><i style="background:var(--lose)"></i>Loses</span>
+        <span><i style="background:var(--mixed)"></i>Mixed</span>
+        <span><i style="background:var(--unsure)"></i>Unsure</span>
+        <span>Bigger dot: more say</span>
+        <span>Dashed ring: not asked yet</span>
+      </div>
+      <div class="sm-insights" id="insights" aria-live="polite"></div>
+    </section>
+
+  </div>
+
+  <section class="tool-actions" aria-label="Save and export">
+    <p class="tool-actions__note">Your work saves automatically in this browser.</p>
+    <div class="tool-actions__buttons">
+      <button class="btn btn--small" type="button" data-action="image">Download image</button>
+      <button class="btn btn--small" type="button" data-action="summary">Download summary</button>
+      <button class="btn btn--small" type="button" data-action="save">Save a copy</button>
+      <button class="btn btn--small" type="button" data-action="open">Open a copy</button>
+      <button class="btn btn--small" type="button" data-action="print">Print or save as PDF</button>
+      <button class="btn btn--small btn--danger" type="button" data-action="reset">Start over</button>
+    </div>
+  </section>
+
+  <section class="reflect" aria-labelledby="reflect-title">
+    <h2 id="reflect-title">Reflect</h2>
+    <p>Jot down a few thoughts. These save with the rest of your work.</p>
+    <ol>
+      <li>
+        <label for="r1">Who did you almost leave out? Why might they be easy to overlook?</label>
+        <textarea id="r1" data-reflect="missed"></textarea>
+      </li>
+      <li>
+        <label for="r2">Who carries the most cost with the least say? What would it take to change that?</label>
+        <textarea id="r2" data-reflect="cost"></textarea>
+      </li>
+      <li>
+        <label for="r3">Whose voice will you seek out next, and how will you approach them?</label>
+        <textarea id="r3" data-reflect="next"></textarea>
+      </li>
+    </ol>
+  </section>
+
+</main>
+
+<script src="../../assets/js/tools.js"></script>
+<script src="../../assets/js/playlab.js"></script>
+
+<script>
+(function () {
+  "use strict";
+
+  var TOOL_ID = "stakeholder-map";
+  var MAX = 20;
+
+  var RINGS = [
+    { id: "core", name: "Core", desc: "Make, run or use it every day." },
+    { id: "direct", name: "Direct", desc: "Their lives or work change because of it." },
+    { id: "indirect", name: "Indirect", desc: "Affected through others, or further down the line." },
+    { id: "wider", name: "Wider world", desc: "Communities, places, te taiao and future generations." }
+  ];
+  var IMPACTS = [["gain", "Gains"], ["lose", "Loses"], ["mixed", "Mixed"], ["unsure", "Unsure"]];
+  var SAYS = [[1, "Little"], [2, "Some"], [3, "A lot"]];
+  var SUGGESTIONS = [
+    ["Future generations", "wider"], ["The environment (te taiao)", "wider"], ["Mana whenua (local iwi and hapū)", "wider"],
+    ["Disabled people", "direct"], ["Older people", "direct"], ["Children and young people", "indirect"],
+    ["People without internet access", "direct"], ["Frontline workers", "core"], ["People who choose to opt out", "indirect"],
+    ["Workers in the supply chain overseas", "wider"], ["Families and carers", "indirect"], ["Recent migrants", "direct"]
+  ];
+
+  var EXAMPLE = {
+    centre: "An AI chatbot replacing the council’s phone line",
+    items: [
+      ["Customer service team", "core", "mixed", 2, true, "Fewer routine calls, but worried about job cuts."],
+      ["Chatbot supplier", "core", "gain", 3, true, ""],
+      ["Council IT team", "core", "mixed", 2, true, ""],
+      ["Residents who phone the council", "direct", "mixed", 1, false, "Faster answers to simple questions, harder to reach a person."],
+      ["Older residents", "direct", "lose", 1, false, ""],
+      ["Elected councillors", "direct", "gain", 3, true, ""],
+      ["Community law and advice services", "indirect", "lose", 1, false, "May see more people who couldn’t get help from the council."],
+      ["Ratepayers", "indirect", "gain", 2, false, ""],
+      ["Mana whenua (local iwi and hapū)", "wider", "unsure", 2, false, ""],
+      ["People without internet access", "wider", "lose", 1, false, ""],
+      ["Future residents", "wider", "unsure", 1, false, ""]
+    ]
+  };
+
+  var EMPTY = { centre: "", items: [], reflect: {} };
+  function fresh() { return JSON.parse(JSON.stringify(EMPTY)); }
+  var store = PlayLab.store(TOOL_ID);
+  var state = Object.assign(fresh(), store.get("state", {}) || {});
+  function save() { store.set("state", state); }
+
+  var esc = PlayLab.escape;
+  var $ = function (id) { return document.getElementById(id); };
+  function ring(id) { return RINGS.find(function (r) { return r.id === id; }) || RINGS[0]; }
+  function newItem(name, r, impact, say, asked, note) {
+    return { id: "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), name: name, ring: r || "direct", impact: impact || "unsure", say: say || 2, asked: !!asked, note: note || "" };
+  }
+
+  /* ==================================================================
+     Centre, adding and suggestions
+     ================================================================== */
+  $("centre").addEventListener("input", function (e) { state.centre = e.target.value; save(); scheduleMap(); });
+
+  $("new-ring").innerHTML = RINGS.map(function (r) { return '<option value="' + r.id + '"' + (r.id === "direct" ? " selected" : "") + ">" + esc(r.name) + "</option>"; }).join("");
+  $("rings-key").innerHTML = RINGS.map(function (r) { return "<div><dt>" + esc(r.name) + "</dt><dd>" + esc(r.desc) + "</dd></div>"; }).join("");
+
+  function add(name, r, focusNew) {
+    if (state.items.length >= MAX) { PlayLab.toast(MAX + " stakeholders is plenty. Combine similar groups"); return null; }
+    var it = newItem(name, r);
+    state.items.push(it);
+    save(); renderList(); renderSuggest(); renderMap();
+    if (focusNew) {
+      var b = document.querySelector('#item-' + it.id + ' [data-seg="impact"] button');
+      if (b) b.focus();
+    }
+    return it;
+  }
+  $("add-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var input = $("new-name"), v = input.value.trim();
+    if (!v) { PlayLab.toast("Type a stakeholder first"); input.focus(); return; }
+    if (add(v, $("new-ring").value, false)) { input.value = ""; input.focus(); PlayLab.toast("Added to the " + ring($("new-ring").value).name.toLowerCase() + " ring"); }
+  });
+
+  function has(name) { return state.items.some(function (it) { return it.name.trim().toLowerCase() === name.toLowerCase(); }); }
+  function renderSuggest() {
+    var left = SUGGESTIONS.filter(function (s) { return !has(s[0]); });
+    $("suggest").innerHTML = left.length ? left.map(function (s) {
+      return '<button type="button" data-suggest="' + esc(s[0]) + '" data-ring="' + s[1] + '">' + esc(s[0]) + "</button>";
+    }).join("") : '<p class="hint" style="margin:0">You’ve added them all. Who else might be missing?</p>';
+  }
+  $("suggest").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-suggest]"); if (!b) return;
+    var it = add(b.dataset.suggest, b.dataset.ring, false);
+    if (it) {
+      PlayLab.toast("Added " + it.name + ". Now decide how they’re affected");
+      var next = $("suggest").querySelector("button"); if (next) next.focus();
+    }
+  });
+
+  $("example-btn").addEventListener("click", function () {
+    if ((state.centre.trim() || state.items.length) && !confirm("Replace your map with an example?")) return;
+    state.centre = EXAMPLE.centre;
+    state.items = EXAMPLE.items.map(function (x) { return newItem(x[0], x[1], x[2], x[3], x[4], x[5]); });
+    save(); renderAll();
+    PlayLab.toast("Example loaded. What’s missing from it?");
+  });
+
+  /* ==================================================================
+     Stakeholder list
+     ================================================================== */
+  function seg(it, field, options, label) {
+    return '<div class="sm-opt"><p id="' + field + "-l-" + it.id + '">' + label + "</p>" +
+      '<div class="sm-seg" data-seg="' + field + '" role="group" aria-labelledby="' + field + "-l-" + it.id + '">' +
+      options.map(function (o) {
+        return '<button type="button" data-val="' + o[0] + '" aria-pressed="' + (String(it[field]) === String(o[0])) + '">' + o[1] + "</button>";
+      }).join("") + "</div></div>";
+  }
+  function renderList() {
+    $("list").innerHTML = RINGS.map(function (r) {
+      return state.items.filter(function (it) { return it.ring === r.id; }).map(function (it) {
+        return '<li class="sm-item" id="item-' + it.id + '" data-id="' + it.id + '" data-impact="' + it.impact + '">' +
+          '<div class="sm-item__top">' +
+            '<label class="visually-hidden" for="nm-' + it.id + '">Stakeholder name</label>' +
+            '<input type="text" id="nm-' + it.id + '" data-field="name" maxlength="40" value="' + esc(it.name) + '">' +
+            '<label class="visually-hidden" for="rg-' + it.id + '">Ring for ' + esc(it.name) + "</label>" +
+            '<select id="rg-' + it.id + '" data-field="ring">' + RINGS.map(function (x) { return '<option value="' + x.id + '"' + (x.id === it.ring ? " selected" : "") + ">" + esc(x.name) + "</option>"; }).join("") + "</select>" +
+            '<button class="btn btn--quiet btn--small" type="button" data-remove aria-label="Remove ' + esc(it.name) + '">Remove</button>' +
+          "</div>" +
+          '<div class="sm-opts">' + seg(it, "impact", IMPACTS, "How are they affected?") + seg(it, "say", SAYS, "How much say do they have?") + "</div>" +
+          '<label class="sm-asked"><input type="checkbox" data-field="asked"' + (it.asked ? " checked" : "") + "> We’ve asked them what they think</label>" +
+          '<label class="visually-hidden" for="nt-' + it.id + '">Notes about ' + esc(it.name) + "</label>" +
+          '<textarea id="nt-' + it.id + '" data-field="note" maxlength="240" placeholder="How are they affected? (optional)">' + esc(it.note) + "</textarea>" +
+          "</li>";
+      }).join("");
+    }).join("");
+    $("list-empty").hidden = state.items.length > 0;
+  }
+  function findItem(el) {
+    var li = el.closest("[data-id]");
+    return li ? { li: li, it: state.items.find(function (x) { return x.id === li.dataset.id; }) } : null;
+  }
+  $("list").addEventListener("input", function (e) {
+    var f = findItem(e.target), field = e.target.dataset.field; if (!f || !field) return;
+    if (field === "name" || field === "note") { f.it[field] = e.target.value; save(); if (field === "name") { scheduleMap(); renderSuggest(); } }
+  });
+  $("list").addEventListener("change", function (e) {
+    var f = findItem(e.target), field = e.target.dataset.field; if (!f) return;
+    if (field === "ring") { f.it.ring = e.target.value; save(); renderList(); renderMap(); $("rg-" + f.it.id).focus(); }
+    if (field === "asked") { f.it.asked = e.target.checked; save(); renderMap(); }
+  });
+  $("list").addEventListener("click", function (e) {
+    var f = findItem(e.target); if (!f) return;
+    var b = e.target.closest(".sm-seg button");
+    if (b) {
+      var field = b.closest("[data-seg]").dataset.seg;
+      f.it[field] = field === "say" ? Number(b.dataset.val) : b.dataset.val;
+      b.parentNode.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+      if (field === "impact") f.li.dataset.impact = f.it.impact;
+      save(); renderMap();
+    }
+    if (e.target.closest("[data-remove]")) {
+      if (!confirm("Remove " + (f.it.name || "this stakeholder") + "?")) return;
+      state.items = state.items.filter(function (x) { return x !== f.it; });
+      save(); renderList(); renderSuggest(); renderMap();
+      $("new-name").focus();
+    }
+  });
+
+  /* ==================================================================
+     The map
+     ================================================================== */
+  var C = 400, CR = 62, RAD = { core: 140, direct: 222, indirect: 300, wider: 375 };
+  var INNER = { core: CR, direct: 140, indirect: 222, wider: 300 };
+
+  function lines(name, width, max) {
+    width = width || 17; max = max || 3;
+    var words = name.trim().split(/\s+/), out = [], line = "";
+    words.forEach(function (w) {
+      if ((line + " " + w).trim().length > width && line) { out.push(line); line = w; } else line = (line + " " + w).trim();
+    });
+    if (line) out.push(line);
+    if (out.length > max) { out = out.slice(0, max); out[max - 1] = out[max - 1].replace(/.{0,2}$/, "") + "…"; }
+    return out;
+  }
+
+  var mapQueued = false;
+  function scheduleMap() {
+    if (mapQueued) return; mapQueued = true;
+    requestAnimationFrame(function () { mapQueued = false; renderMap(); });
+  }
+
+  function renderMap() {
+    var rings = RINGS.slice().reverse().map(function (r) {
+      return '<circle class="sm-ring sm-ring--' + r.id + '" cx="' + C + '" cy="' + C + '" r="' + RAD[r.id] + '"/>';
+    }).join("");
+    var ringLabels = RINGS.map(function (r) {
+      return '<text class="sm-ringlabel" x="' + C + '" y="' + (C - RAD[r.id] + 16) + '" text-anchor="middle">' + esc(r.name) + "</text>";
+    }).join("");
+
+    // Give every stakeholder its own angle. Rings take turns, so each ring is spread all the way round
+    // and no two labels point in the same direction. The top is left clear for the ring names.
+    var byRing = RINGS.map(function (r) { return state.items.filter(function (it) { return it.ring === r.id; }); });
+    var order = [], k = 0;
+    while (order.length < state.items.length) {
+      byRing.forEach(function (list) { if (list[k]) order.push(list[k]); });
+      k++;
+    }
+    var gap = 0.95, span = Math.PI * 2 - gap, N = order.length;
+    var dots = order.map(function (it, idx) {
+      var r = ring(it.ring);
+      var radius = (RAD[r.id] + INNER[r.id]) / 2;
+      var a = -Math.PI / 2 + gap / 2 + span * (idx + 0.5) / N;
+      var x = C + radius * Math.cos(a), y = C + radius * Math.sin(a);
+      var size = it.say === 3 ? 17 : it.say === 2 ? 13 : 9;
+      // Inner rings have less room, so their labels wrap more narrowly
+      var label = lines(it.name || "Unnamed", r.id === "core" ? 11 : r.id === "direct" ? 13 : 17, 3);
+      var impact = IMPACTS.find(function (o) { return o[0] === it.impact; });
+      var desc = (it.name || "Unnamed") + ", " + r.name.toLowerCase() + " ring, " + impact[1].toLowerCase() + ", " +
+        SAYS.find(function (s) { return s[0] === it.say; })[1].toLowerCase() + " say, " + (it.asked ? "asked" : "not asked yet");
+      return '<g class="sm-dot" data-id="' + it.id + '" data-impact="' + it.impact + '" tabindex="0" role="button" aria-label="' + esc(desc) + '. Select to edit."' +
+        ' transform="translate(' + x.toFixed(1) + " " + y.toFixed(1) + ')">' +
+        (it.asked ? "" : '<circle class="sm-notasked" r="' + (size + 5) + '"/>') +
+        '<circle class="sm-dot__body" r="' + size + '"/>' +
+        labelSVG(label, a, size) + "</g>";
+    }).join("");
+
+    var cLines = lines(state.centre || "Your technology", 13, 4);
+    var centre = '<g class="sm-centre"><circle cx="' + C + '" cy="' + C + '" r="' + CR + '"/><text text-anchor="middle">' +
+      cLines.map(function (l, i) { return '<tspan x="' + C + '" y="' + (C + 5 - (cLines.length - 1) * 7.5 + i * 15) + '">' + esc(l) + "</tspan>"; }).join("") +
+      "</text></g>";
+
+    $("map").innerHTML =
+      '<svg class="sm-svg" viewBox="-115 -10 1030 820" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="map-t map-d">' +
+      '<title id="map-t">Stakeholder ecosystem' + (state.centre ? ": " + esc(state.centre) : "") + "</title>" +
+      '<desc id="map-d">' + esc(describe()) + "</desc>" +
+      rings + ringLabels + centre + dots + "</svg>";
+    renderInsights();
+  }
+
+  // Labels sit on the outward side of each dot, so they point away from the centre
+  function labelSVG(label, a, size) {
+    var cx = Math.cos(a), sy = Math.sin(a), LH = 17, h = label.length * LH;
+    var anchor, x, y0;
+    if (Math.abs(cx) > 0.45) {
+      anchor = cx > 0 ? "start" : "end";
+      x = (cx > 0 ? 1 : -1) * (size + 7);
+      y0 = -h / 2 + 13;
+    } else {
+      anchor = "middle"; x = 0;
+      y0 = sy > 0 ? size + 18 : -size - 8 - h + 16;
+    }
+    return '<text text-anchor="' + anchor + '">' + label.map(function (l, i) {
+      return '<tspan x="' + x + '" y="' + (y0 + i * LH).toFixed(1) + '">' + esc(l) + "</tspan>";
+    }).join("") + "</text>";
+  }
+
+  function describe() {
+    return RINGS.map(function (r) { return r.name + ": " + state.items.filter(function (it) { return it.ring === r.id; }).length; }).join(", ") + ".";
+  }
+
+  function names(list) {
+    var n = list.map(function (it) { return it.name || "Unnamed"; });
+    return n.length <= 1 ? n.join("") : n.slice(0, -1).join(", ") + " and " + n[n.length - 1];
+  }
+  function renderInsights() {
+    if (!state.items.length) { $("insights").innerHTML = '<p class="hint">Add stakeholders and the map will fill in.</p>'; return; }
+    var out = [];
+    var costly = state.items.filter(function (it) { return (it.impact === "lose" || it.impact === "mixed") && it.say === 1; });
+    var gainers = state.items.filter(function (it) { return it.impact === "gain" && it.say === 3; });
+    var unasked = state.items.filter(function (it) { return !it.asked; });
+    var wider = state.items.filter(function (it) { return it.ring === "wider"; });
+    out.push(costly.length
+      ? '<div class="sm-insight is-alert"><h3>Carrying the cost with little say</h3><p>' + esc(names(costly)) + ".</p></div>"
+      : '<div class="sm-insight"><h3>Carrying the cost with little say</h3><p>No one yet. Look again at who loses out.</p></div>');
+    if (gainers.length) out.push('<div class="sm-insight"><h3>Gaining, with a lot of say</h3><p>' + esc(names(gainers)) + ".</p></div>");
+    out.push('<div class="sm-insight' + (unasked.length > state.items.length / 2 ? " is-alert" : "") + '"><h3>Not asked yet</h3><p>' +
+      (unasked.length ? unasked.length + " of " + state.items.length + ": " + esc(names(unasked)) + "." : "Everyone on your map has been asked. Great.") + "</p></div>");
+    if (!wider.length) out.push('<div class="sm-insight"><h3>Nothing in the wider world yet</h3><p>Think about communities, te taiao and future generations.</p></div>');
+    $("insights").innerHTML = out.join("");
+  }
+
+  function activate(g) {
+    var li = $("item-" + g.dataset.id); if (!li) return;
+    li.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    li.querySelector("input").focus({ preventScroll: true });
+    li.classList.add("is-flash"); setTimeout(function () { li.classList.remove("is-flash"); }, 1200);
+  }
+  $("map").addEventListener("click", function (e) { var g = e.target.closest("[data-id]"); if (g) activate(g); });
+  $("map").addEventListener("keydown", function (e) {
+    var g = e.target.closest("[data-id]");
+    if (g && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); activate(g); }
+  });
+
+  /* ---------- Reflections ---------- */
+  var reflectFields = document.querySelectorAll("[data-reflect]");
+  function renderReflect() { reflectFields.forEach(function (f) { f.value = state.reflect[f.dataset.reflect] || ""; }); }
+  reflectFields.forEach(function (f) {
+    f.addEventListener("input", function () { state.reflect[f.dataset.reflect] = f.value; save(); });
+  });
+
+  /* ==================================================================
+     Save and export
+     ================================================================== */
+  function summary() {
+    var lines2 = [
+      "# Stakeholder Ecosystem Map: " + (state.centre.trim() || "Untitled"),
+      "",
+      "Futures PlayLab, academyEX. Created " + new Date().toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }) + ".",
+      ""
+    ];
+    RINGS.forEach(function (r) {
+      var list = state.items.filter(function (it) { return it.ring === r.id; });
+      lines2.push("## " + r.name + " (" + r.desc.replace(/\.$/, "").toLowerCase() + ")", "");
+      if (!list.length) lines2.push("_No one yet._");
+      list.forEach(function (it) {
+        var imp = IMPACTS.find(function (o) { return o[0] === it.impact; })[1];
+        var say = SAYS.find(function (s) { return s[0] === it.say; })[1];
+        lines2.push("- **" + (it.name || "Unnamed") + "**: " + imp.toLowerCase() + ", " + say.toLowerCase() + " say, " + (it.asked ? "asked" : "not asked yet") + (it.note.trim() ? ". " + it.note.trim() : ""));
+      });
+      lines2.push("");
+    });
+    var costly = state.items.filter(function (it) { return (it.impact === "lose" || it.impact === "mixed") && it.say === 1; });
+    lines2.push("## Carrying the cost with little say", "", costly.length ? names(costly) + "." : "_No one identified._", "");
+    lines2.push("## Reflections", "");
+    document.querySelectorAll(".reflect label").forEach(function (lab) {
+      var key = $(lab.htmlFor).dataset.reflect;
+      lines2.push("**" + lab.textContent + "**", "", (state.reflect[key] || "").trim() || "_No answer yet._", "");
+    });
+    return lines2.join("\n");
+  }
+
+  var actions = {
+    image: function () {
+      var view = $("workspace");
+      view.style.maxHeight = "none"; view.style.overflow = "visible";
+      PlayLab.export.elementToPNG(view, PlayLab.export.filename(TOOL_ID, "png"))
+        .then(function () { PlayLab.toast("Image downloaded"); })
+        .catch(function (err) { PlayLab.toast(err.message); })
+        .then(function () { view.style.maxHeight = ""; view.style.overflow = ""; });
+    },
+    summary: function () {
+      PlayLab.export.markdown(PlayLab.export.filename(TOOL_ID + "-summary", "md"), summary());
+      PlayLab.toast("Summary downloaded");
+    },
+    save: function () {
+      PlayLab.export.saveFile(TOOL_ID, state);
+      PlayLab.toast("Copy saved to your downloads");
+    },
+    open: function () {
+      PlayLab.export.openSaveFile(TOOL_ID).then(function (data) {
+        state = Object.assign(fresh(), data);
+        save(); renderAll();
+        PlayLab.toast("Copy opened");
+      }).catch(function (err) {
+        if (err.message !== "cancelled") PlayLab.toast(err.message);
+      });
+    },
+    print: function () { PlayLab.export.print(); },
+    reset: function () {
+      if (!confirm("Start over? This clears your map and reflections from this browser. Save a copy first if you want to keep them.")) return;
+      store.clear();
+      state = fresh();
+      renderAll();
+      PlayLab.toast("Cleared. Ready for a fresh start");
+    }
+  };
+  document.querySelectorAll("[data-action]").forEach(function (btn) {
+    btn.addEventListener("click", function () { actions[btn.dataset.action](); });
+  });
+
+  function renderAll() {
+    $("centre").value = state.centre;
+    renderList(); renderSuggest(); renderMap(); renderReflect();
+  }
+  renderAll();
+})();
+</script>
+</body>
+</html>

@@ -127,7 +127,7 @@ window.PLAYLAB_TOOLS = {
       description: "Map who a technology touches, including the people and places easily left out.",
       minutes: 20,
       output: "A stakeholder map",
-      status: "planned"
+      status: "live"
     },
 
     /* ---------- Digital literacy ---------- */

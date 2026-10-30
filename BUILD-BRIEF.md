@@ -99,8 +99,8 @@ Store each tool's data as one `state` object, so saving, opening a copy and star
 | 3 | Review pilots and adjust the foundation | When feedback arrives |
 | 4A | Signal Collider, How Might We Reframer, Futures Cone Sorter | Done |
 | 4B | Assumption Mapper, Three Horizons Mapper, Backcasting Timeline, Pre-mortem | Done |
-| 4C | Feed Algorithm Sandbox (done), Stakeholder Ecosystem Map (next) | In progress |
-| 4D | Train a Biased Classifier, AI Output Critique Lab, Data Sovereignty Explorer (content prepared first; the Data Sovereignty Explorer developed with Māori advisors) | |
+| 4C | Feed Algorithm Sandbox, Stakeholder Ecosystem Map | Done |
+| 4D | Train a Biased Classifier, AI Output Critique Lab, Data Sovereignty Explorer (content prepared first; the Data Sovereignty Explorer developed with Māori advisors) | Next (content first) |
 | 5 | Polish: accessibility check, facilitator notes, consistency pass | |
 
 Update this table as tools go live.
